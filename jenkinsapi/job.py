@@ -1,6 +1,7 @@
 import logging
 import urlparse
 #import urllib2
+import re
 import urllib
 import xml.etree.ElementTree as ET
 from collections import defaultdict
@@ -357,10 +358,13 @@ class Job(JenkinsBase):
         #print ET.tostring(publishers)		
         self.update_config(ET.tostring(element_tree))
                     
-    def modify_goals(self,new_str,old_str):
+    def modify_goals(self,newStr,oldStr=None,count=0,flags=0):
         element_tree = self._get_config_element_tree()
         goals = element_tree.find('./goals')
-        goalstr=goals.text.replace(old_str,new_str)
+        if not oldStr:
+            goalstr = newStr
+        else:
+            goalstr = re.sub(old_str,new_str,goals.text,count,flags)
         goals.text = goalstr
         self.update_config(ET.tostring(element_tree))
     
