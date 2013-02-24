@@ -146,4 +146,4 @@ if __name__=='__main__':
     elif options.action == "goals":
         modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
     else:
-        pass
+        raise Exception("invalid action")
