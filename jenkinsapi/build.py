@@ -3,6 +3,8 @@ from jenkinsapi import config
 from jenkinsapi.jenkinsbase import JenkinsBase
 from jenkinsapi.exceptions import NoResults#, FailedNoResults
 #from jenkinsapi.constants import STATUS_FAIL, STATUS_ABORTED, RESULTSTATUS_FAILURE
+from jenkinsapi.exceptions import NoResults, FailedNoResults
+from jenkinsapi.constants import STATUS_FAIL, STATUS_ABORTED, RESULTSTATUS_FAILURE
 from jenkinsapi.result_set import ResultSet
 
 from time import sleep
