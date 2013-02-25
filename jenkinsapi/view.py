@@ -234,7 +234,10 @@ class View(JenkinsBase):
         self.post_data(url, '')
         newjk = self._clone()
         return newjk
-
+    
+    def has_view(self,view_name):
+        return view_name in self.get_view_dict()
+    
     def create_view(self, str_view_name, people=None):
         """
         Create a view, viewExistsCheck

@@ -344,7 +344,11 @@ class Job(JenkinsBase):
 			<configs>
 				<hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
 					<configs>
-						<hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+						<hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+						    <properties>stageName=${stageName}
+SSH_USER=${SSH_USER}
+stageDomain=${stageDomain}</properties>
+                        </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
 					</configs>
 					<projects>%s</projects>
 					<condition>ALWAYS</condition>
@@ -368,6 +372,28 @@ class Job(JenkinsBase):
         goals.text = goalstr
         self.update_config(ET.tostring(element_tree))
     
+    def modify_predefined_parameters(self,params={},replace=False):
+        '''
+        not tested yet
+        :param params:
+        :param replace:
+        '''
+        element_tree = self._get_config_element_tree()
+        parameterDefinitions = element_tree.find('./properties/hudson.model.ParametersDefinitionProperty/parameterDefinitions')
+        for para in parameterDefinitions.findall("./hudson.model.StringParameterDefinition"):
+            if replace:
+                parameterDefinitions.remove(para)
+                continue
+            name = para.find("./name").text
+            if name in params:
+                para.find("./defaultValue").text = params[name]
+                params.pop(name)
+        while len(params)>0:
+            newNodeStr = "<hudson.model.StringParameterDefinition><name>%s</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition>"%params.popitem()
+            newParamNode = ET.fromstring(nodeStr)
+            parameterDefinitions.append(newParamNode)
+        self.update_config(ET.tostring(element_tree))
+        
     def update_config(self, config):
         """
         Update the config.xml to the job

@@ -29,11 +29,33 @@ jen_url = "https://fusion.paypal.com/jenkins/"
 jen = None
 jobs = []
 
-def joblist(jobsName):
+def copyview(srcviewurl, dstViewurl,doAdd=False,suffix="_Debug"):
+    srcview = jen.get_view_by_url(srcviewurl)
+    dstview = jen.get_view_by_url(dstViewurl)
+    for jobName in srcview.get_jobs_list():
+        if doAdd:
+            if not dstview.has_job(jobname):
+                log = dstview.add_job(jobName)
+                logger.info(log)
+        else:
+            newjobname = jobName + suffix
+            job = desview.copy_job(jobName,newjobname)
+            logger.info("job %s is copied to new view as %s"%(jobName,newjobname))
+            
+def modify_view_jobs(url,fn,*args, **kwargs):
+    view = jen.get_view_by_url(url)
+    jobsName = view.get_jobs_list()
+    fn(view,jobsName,*args, **kwargs)
+    subviews = view.get_view_dict()
+    for vn,vu in subviews.iteritems():
+#        view = fv.get_view(vn)
+        modify_view_jobs(vu,fn,*args, **kwargs)
+
+def joblist(view,jobsName):
     assert isinstance(jobsName,list)
     jobs.extend(jobsName)
     
-def chain(jobsName,dochain=True):
+def chain(view,jobsName,dochain=True):
     assert isinstance(jobsName,list)
     jobsName.sort()
     jobsName.reverse()
@@ -44,7 +66,7 @@ def chain(jobsName,dochain=True):
         logger.info("%s is chained to %s"%(chain,jobName))
         chain = dochain and jobName or chain
 
-def goals(jobsName,newStr=None,oldStr=None,count=-1):
+def goals(view,jobsName,newStr=None,oldStr=None,count=-1):
     assert isinstance(jobsName,list)
     goalsStr = "clean test -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=${DEFAULT_EMAIL_PREFIX} -DJAWS_NIGHTOWL_MAIL_SERVER=nightowllvs01.qa.paypal.com -DsuiteXmlFile=%s -Dpaypal.buildid=5333310"
     jobsName.sort()
@@ -52,17 +74,16 @@ def goals(jobsName,newStr=None,oldStr=None,count=-1):
         job = jen[jobName]
         job.modify_goals(goalsStr%template[jobName.endswith("_Debug") and jobName[:-6] or jobName])
         logger.info("goals of %s has been updated"%jobName)
-        
-def modify_view_jobs(url,fn,*args, **kwargs):
-    view = jen.get_view_by_url(url)
-    jobsName = view.get_jobs_list()
-    fn(jobsName,*args, **kwargs)
-    subviews = view.get_view_dict()
-    for vn,vu in subviews.iteritems():
-#        view = fv.get_view(vn)
-        modify_view_jobs(vu,fn,*args, **kwargs)
 
-def launch(jobsName,flow,stage,email,sshUser="ppbuild",domain="qa"):
+def defaultparameters(view,jobsName,params={}):
+    assert isinstance(jobsName,list)
+    jobsName.sort()
+    for jobName in jobsName:
+        job = jen[jobName]
+        job.modify_predefined_parameters(params)
+        logger.info("Default parameters of %s has been updated"%jobName)
+
+def launch(view,jobsName,flow,stage,email,sshUser="ppbuild",domain="qa"):
     assert isinstance(jobsName,list)
     if len(jobsName)==0:
         return
@@ -77,7 +98,7 @@ def launch(jobsName,flow,stage,email,sshUser="ppbuild",domain="qa"):
     job.invoke(params=params)
 #    logger.info("Job %s has started"%jobName)
     
-def launchall(jobsName, file):
+def launchall(view,jobsName, file):
     raise Exception("Under construction")
     assert isinstance(jobsName,list)
     try:
@@ -91,17 +112,21 @@ def launchall(jobsName, file):
     job = jen[jobName]
     job.invoke(params = params[flowName])
 
-def compare_jobs():
-    aeurl = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/Horizontally%20chained%20view%20%28under%20construction%29/view/Per%20Flow/"
-    lqaurl_flow = "https://fusion.paypal.com/jenkins/user/tkhoo/my-views/view/Flow%20View/"
-    lqaurl_locale="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA%20Regression%20Testing/"
+def compare_jobs(d1,d2):
+    ae_flow_url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/Horizontally%20chained%20view%20%28under%20construction%29/view/Per%20Flow/"
+    ae_locale_url = ""
+    lqa_flow_url = "https://fusion.paypal.com/jenkins/user/tkhoo/my-views/view/Flow%20View/"
+    lqa_locale_url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA%20Regression%20Testing/"
     
-    modify_view_jobs(lqaurl_locale,joblist)
+    s1 = eval(d1)
+    s2 = eval(d2)
+    
+    modify_view_jobs(s1,joblist)
     global jobs
     joblist1 = jobs
     jobs=[]
 
-    modify_view_jobs(lqaurl_flow,joblist)
+    modify_view_jobs(s2,joblist)
     joblist2 = jobs
     jobs = []
 #    ae = [a[:-6] for a in ae]
@@ -109,6 +134,7 @@ def compare_jobs():
 #    d2 = list(set(lqa)-set(ae))
     return joblist1, joblist2
 
+################ For Debug Only ##############
 if __name__=='__main__':
 #    modify_view_jobs(url,joblist)
 #    modify_view_jobs(url,chain,doChain=False)
@@ -119,7 +145,8 @@ if __name__=='__main__':
     python %prog [option][value]...
     Usage 1: python ppjen.py -u usename -p password -l viewurl -a chain [-c True|False]
     Usage 2: python ppjen.py -u usename -p password -l viewurl -a goals  [-n newStr [-o oldStr]]
-    Usage 2: python ppjen.py -u usename -p password -l viewurl -a launch  [-s stage -e email]
+    Usage 3: python ppjen.py -u usename -p password -l viewurl -a launch  [-s stage -e email]
+    Usage 4: python ppjen.py -u usename -p password -l viewurl -a update_email -e email
     """
     parser = OptionParser(usage=usage,version="%prog 1.0")
     parser.add_option("-u","--username",dest="username",help="user name to login jenkins")
@@ -127,12 +154,12 @@ if __name__=='__main__':
     parser.add_option("-i","--view",dest="view",help="which view you want to operate. available: AE|LQA")
     parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
-    parser.add_option("-c","--dochain",dest="dochain",help="chain or unchain the jobs under a view")
+    parser.add_option("-c","--dochain",dest="dochain",default = True, help="chain or unchain the jobs under a view")
     parser.add_option("-o","--oldStr",dest="oldStr",help="the old string (or a wildword expression) going to replace by new string, optioanl, default None")
     parser.add_option("-n","--newStr",dest="oldStr",help="the new string going to replace the oldstring, optional, default None")
     parser.add_option("-w","--flow",dest="flow",help="the flow name which is going to be launched")
     parser.add_option("-s","--stage",dest="stage",help="the stage for invoking a job")
-    parser.add_option("-e","--email",dest="email",help="the email for invoking a job")
+    parser.add_option("-e","--email",dest="email",help="the email for invoking a job or default email")
     parser.add_option("-r","--sshuser",dest="ppuser",help="the ppuser for invoking a job")
     parser.add_option("-d","--domain",dest="domain",help="the stage domain for invoking a job")
     parser.add_option("-f","--file",dest="file",help="the configuration file")
@@ -160,6 +187,8 @@ if __name__=='__main__':
         parser.error("lauch action needs flow name, stage and email")
     if options.action == "launchall" and (not options.file):
         parser.error("lauchall action needs configuration file")
+    if options.action == "update_email" and not options.email:
+        parser.error("update_email must accompany a new default email address prefix")
 
     jen = Jenkins(jen_url,options.username,options.password)
     if options.action == "launch":
@@ -169,6 +198,8 @@ if __name__=='__main__':
     elif options.action == "chain":
         modify_view_jobs(options.url,eval(options.action),options.dochain)
     elif options.action == "goals":
+        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
+    elif options.action == "update_email":
         modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
     else:
         raise Exception("invalid action")
