@@ -1,3 +1,4 @@
+import sys
 import logging
 from jenkinsapi.jenkins import Jenkins
 from template import *
@@ -30,7 +31,7 @@ jobs = []
 
 def joblist(jobsName):
     assert isinstance(jobsName,list)
-    jobs.append(jobsName)
+    jobs.extend(jobsName)
     
 def chain(jobsName,dochain=True):
     assert isinstance(jobsName,list)
@@ -89,15 +90,30 @@ def launchall(jobsName, file):
     flowName = jobName[:2]+jobName[7:]
     job = jen[jobName]
     job.invoke(params = params[flowName])
+
+def compare_jobs():
+    aeurl = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/Horizontally%20chained%20view%20%28under%20construction%29/view/Per%20Flow/"
+    lqaurl_flow = "https://fusion.paypal.com/jenkins/user/tkhoo/my-views/view/Flow%20View/"
+    lqaurl_locale="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA%20Regression%20Testing/"
     
+    modify_view_jobs(lqaurl_locale,joblist)
+    global jobs
+    joblist1 = jobs
+    jobs=[]
+
+    modify_view_jobs(lqaurl_flow,joblist)
+    joblist2 = jobs
+    jobs = []
+#    ae = [a[:-6] for a in ae]
+#    d1 = list(set(ae)-set(lqa))
+#    d2 = list(set(lqa)-set(ae))
+    return joblist1, joblist2
 
 if __name__=='__main__':
-#username = "kejiang"
-#password = "Symbio@2013"
-#url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/Horizontally%20chained%20view%20%28under%20construction%29/view/Per%20Flow/"
-#jen = Jenkins(jen_url,username,password)
+#    modify_view_jobs(url,joblist)
 #    modify_view_jobs(url,chain,doChain=False)
 #    modify_view_jobs(url,goals,"-Dpaypal.buildid=5333310","-Dpaypal.buildid=\d+")"
+#    sys.exit()
     usage = """
     This programe is to modify all the jobs under a given view and its sub views.
     python %prog [option][value]...
@@ -108,6 +124,7 @@ if __name__=='__main__':
     parser = OptionParser(usage=usage,version="%prog 1.0")
     parser.add_option("-u","--username",dest="username",help="user name to login jenkins")
     parser.add_option("-p","--password",dest="password",help="user password to login jenkins")
+    parser.add_option("-i","--view",dest="view",help="which view you want to operate. available: AE|LQA")
     parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
     parser.add_option("-c","--dochain",dest="dochain",help="chain or unchain the jobs under a view")
@@ -121,8 +138,16 @@ if __name__=='__main__':
     parser.add_option("-f","--file",dest="file",help="the configuration file")
     options,args = parser.parse_args()
     
-#    if options.file:
-#        config.readfp(open(options.file,'rb'))
+    if options.file and not options.view:
+        parser.error("if use conf file, you need choose a view type")
+    elif options.file:
+        config.readfp(open(options.file,'rb'))
+        if options.view == "AE":
+            config.getOption("AE View","url")
+        elif options.view == "LQA":
+            config.getOption("LQA View","url")
+        else:
+            raise Exception("Invalid view")
     if not options.username:
         parser.error("username can't be empty")
     if not options.url:
