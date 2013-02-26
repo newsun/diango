@@ -1,4 +1,5 @@
 import sys
+from urllib import *
 import logging
 from jenkinsapi.jenkins import Jenkins
 from template import *
@@ -25,37 +26,39 @@ console.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
 logger=logging.getLogger()
 logger.addHandler(console)
 ###############################################
-jen_url = "https://fusion.paypal.com/jenkins/"
+#jen_url = "https://fusion.paypal.com/jenkins/"
+jen_url = "https://fusion.paypal.com:8443/jenkins/login"
 jen = None
 jobs = []
 
 def copyview(srcviewurl, dstViewurl,doAdd=False,suffix="_Debug"):
     srcview = jen.get_view_by_url(srcviewurl)
     dstview = jen.get_view_by_url(dstViewurl)
-    for jobName in srcview.get_jobs_list():
+    for jobname in srcview.get_jobs_list():
         if doAdd:
             if not dstview.has_job(jobname):
-                log = dstview.add_job(jobName)
+                log = dstview.add_job(jobname)
                 logger.info(log)
         else:
-            newjobname = jobName + suffix
-            job = desview.copy_job(jobName,newjobname)
-            logger.info("job %s is copied to new view as %s"%(jobName,newjobname))
+            newjobname = jobname + suffix
+            if not dstview.has_job(newjobname):
+                job = dstview.copy_job(jobname,newjobname)
+                logger.info("job %s is copied to new view as %s"%(jobname,newjobname))
             
 def modify_view_jobs(url,fn,*args, **kwargs):
     view = jen.get_view_by_url(url)
     jobsName = view.get_jobs_list()
-    fn(view,jobsName,*args, **kwargs)
+    fn(jobsName,*args, **kwargs)
     subviews = view.get_view_dict()
     for vn,vu in subviews.iteritems():
 #        view = fv.get_view(vn)
         modify_view_jobs(vu,fn,*args, **kwargs)
 
-def joblist(view,jobsName):
+def joblist(jobsName):
     assert isinstance(jobsName,list)
     jobs.extend(jobsName)
     
-def chain(view,jobsName,dochain=True):
+def chain(jobsName,dochain=True):
     assert isinstance(jobsName,list)
     jobsName.sort()
     jobsName.reverse()
@@ -66,7 +69,7 @@ def chain(view,jobsName,dochain=True):
         logger.info("%s is chained to %s"%(chain,jobName))
         chain = dochain and jobName or chain
 
-def goals(view,jobsName,newStr=None,oldStr=None,count=-1):
+def goals(jobsName,newStr=None,oldStr=None,count=-1):
     assert isinstance(jobsName,list)
     goalsStr = "clean test -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=${DEFAULT_EMAIL_PREFIX} -DJAWS_NIGHTOWL_MAIL_SERVER=nightowllvs01.qa.paypal.com -DsuiteXmlFile=%s -Dpaypal.buildid=5333310"
     jobsName.sort()
@@ -75,7 +78,7 @@ def goals(view,jobsName,newStr=None,oldStr=None,count=-1):
         job.modify_goals(goalsStr%template[jobName.endswith("_Debug") and jobName[:-6] or jobName])
         logger.info("goals of %s has been updated"%jobName)
 
-def defaultparameters(view,jobsName,params={}):
+def defaultparameters(jobsName,params={}):
     assert isinstance(jobsName,list)
     jobsName.sort()
     for jobName in jobsName:
@@ -83,7 +86,7 @@ def defaultparameters(view,jobsName,params={}):
         job.modify_predefined_parameters(params)
         logger.info("Default parameters of %s has been updated"%jobName)
 
-def launch(view,jobsName,flow,stage,email,sshUser="ppbuild",domain="qa"):
+def launch(jobsName,flow,stage,email,sshUser="ppbuild",domain="qa"):
     assert isinstance(jobsName,list)
     if len(jobsName)==0:
         return
@@ -98,7 +101,7 @@ def launch(view,jobsName,flow,stage,email,sshUser="ppbuild",domain="qa"):
     job.invoke(params=params)
 #    logger.info("Job %s has started"%jobName)
     
-def launchall(view,jobsName, file):
+def launchall(jobsName, file):
     raise Exception("Under construction")
     assert isinstance(jobsName,list)
     try:
@@ -113,10 +116,10 @@ def launchall(view,jobsName, file):
     job.invoke(params = params[flowName])
 
 def compare_jobs(d1,d2):
-    ae_flow_url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/Horizontally%20chained%20view%20%28under%20construction%29/view/Per%20Flow/"
-    ae_locale_url = ""
+    ae_flow_url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/AE_Flow/"
+    ae_locale_url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/"
     lqa_flow_url = "https://fusion.paypal.com/jenkins/user/tkhoo/my-views/view/Flow%20View/"
-    lqa_locale_url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA%20Regression%20Testing/"
+    lqa_locale_url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
     
     s1 = eval(d1)
     s2 = eval(d2)
@@ -136,6 +139,13 @@ def compare_jobs(d1,d2):
 
 ################ For Debug Only ##############
 if __name__=='__main__':
+#    if len(sys.argv) != 3:
+#        sys.exit()
+#    srcviewurl = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/%s/view/%s/"%(sys.argv[1],sys.argv[2])
+#    dstviewurl = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/view/%s/"%(sys.argv[1],sys.argv[2])
+#    jen = Jenkins(jen_url,"*","*")
+#    copyview(srcviewurl,dstviewurl)
+#    sys.exit()
 #    modify_view_jobs(url,joblist)
 #    modify_view_jobs(url,chain,doChain=False)
 #    modify_view_jobs(url,goals,"-Dpaypal.buildid=5333310","-Dpaypal.buildid=\d+")"

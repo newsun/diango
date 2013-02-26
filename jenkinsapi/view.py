@@ -1,6 +1,7 @@
 from jenkinsapi.jenkinsbase import JenkinsBase
 from jenkinsapi.job import Job
-import urllib
+import urllib,urllib2
+import urlparse
 
 class View(JenkinsBase):
 
@@ -156,11 +157,12 @@ class View(JenkinsBase):
         :param newjobname: name of new job, str
         :return: new Job obj
         """
-        qs = urllib.urlencode({'name': newjobname,
+        json = {'name': newjobname,
                                'mode': 'copy',
-                               'from': jobname})
-        copy_job_url = urlparse.urljoin(self.baseurl, "createItem?%s" % qs)
-        self.post_data(copy_job_url, '')
+                               'from': jobname,'Submit':'OK'}
+#        json["json"] = json
+        copy_job_url = urlparse.urljoin(self.baseurl, "createItem" )
+        self.post_data(copy_job_url, json)
         newjk = self._clone()
         return newjk.get_job(newjobname)
 
