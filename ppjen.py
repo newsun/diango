@@ -26,8 +26,7 @@ console.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
 logger=logging.getLogger()
 logger.addHandler(console)
 ###############################################
-#jen_url = "https://fusion.paypal.com/jenkins/"
-jen_url = "https://fusion.paypal.com:8443/jenkins/login"
+jen_url = "https://fusion.paypal.com/jenkins/"
 jen = None
 jobs = []
 
@@ -162,7 +161,7 @@ if __name__=='__main__':
     parser.add_option("-u","--username",dest="username",help="user name to login jenkins")
     parser.add_option("-p","--password",dest="password",help="user password to login jenkins")
     parser.add_option("-i","--view",dest="view",help="which view you want to operate. available: AE|LQA")
-    parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
+#    parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
     parser.add_option("-c","--dochain",dest="dochain",default = True, help="chain or unchain the jobs under a view")
     parser.add_option("-o","--oldStr",dest="oldStr",help="the old string (or a wildword expression) going to replace by new string, optioanl, default None")
