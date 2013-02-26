@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-import os
+import urlparse
+import os,sys
 from string import *
 import logging,requests
 from urllib import *
 from xml.dom import minidom
+import xml.etree.ElementTree as ET
 s=requests.Session()
-workspace="..\\Localization\\localization-tests\\src\\test\\resources\\configfiles\\LqaRegressionTesting\\"
+#jen_url = "https://fusionapplvs01.qa.paypal.com:8443/jenkins/"
+jen_url = "https://fusion.paypal.com/jenkins/"
 ###############################################
 ########### Logging Configuration #############
 ###############################################
@@ -29,75 +32,53 @@ cert=None#'test.pem'
 #logger.info("current working space %s"%os.getcwd())
 #if(doVerify and (not os.path.exists(cert))):
 #    raise Exception("Cert file doesn't exist")
-def deleteItem(region,country,testsuite,chain):
-    logger.info("Update test suite %s %s %s %s"%(region,country,testsuite,chain))
-    url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%s/view/%s/view/%s/job/%s/doDelete"%(quote("LQA Regression Testing"),region,country,testsuite)
-    logger.info(url)
+def deleteItem(jobname):
+    logger.info("Update job %s"%jobname)
+    url=urlparse.urljoin(jen_url,"job/%s/doDelete"%jobname)
     data={"Submit":"Yes",json:{}}
     res=s.post(url,data=data)	
-def updateDescription(folder,region,country,testsuite):
-    logger.info("Update test suite %s %s %s"%(region,country,testsuite))
-    if folder.find("AE ")==0:
-        testsuite=testsuite+"_Debug"
-    url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%s/view/%s/view/%s/job/%s/description"%(quote(folder),region,country,testsuite)
-    desc="<br><br><a style=\"color:blue\" href=\"https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%s/view/%s/view/%s/job/%s/ws/target/surefire-reports/html/report.html\"><font size =4>Bluefin HTML Report </font></a>"%(quote(folder),region,country,testsuite)
+
+def updateDescription(jobname):
+    logger.info("Update job %s"%(jobname))
+    api_url = urlparse.urljoin(jen_url,"job/%s/description"%jobname)
+    report_url = urlparse.urljoin(jen_url,"job/%s/ws/target/surefire-reports/html/report.html"%jobname)
+    desc="<br><br><a style=\"color:blue\" href=\"%s\"><font size =4>Bluefin HTML Report </font></a>"%report_url
     json = {"description":desc}
-    res=s.post(url,data=json)
+    res=s.post(api_url,data=json)
     if res.status_code !=204 and res.status_code !=200:
-            logger.error("Failed to update test suite description: %s %s %s"%(region,country,testsuite))
-def updateDescription(joburl):
-    logger.info("Update test suite %s"%(joburl))
-    url=joburl+"description"
-    desc="<br><br><a style=\"color:blue\" href=\"%sws/target/surefire-reports/html/report.html\"><font size =4>Bluefin HTML Report </font></a>"%(joburl)
-    json = {"description":desc}
-    res=s.post(url,data=json)
-    if res.status_code !=204 and res.status_code !=200:
-            logger.error("Failed to update test suite description: %s"%joburl)
-            
-def updateItem(region,country,testsuite,chain):
-    logger.info("Update test suite %s %s %s %s"%(region,country,testsuite,chain))
-    url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%s/view/%s/view/%s/job/%s/configSubmit"%(quote("LQA Regression Testing"),region,country,testsuite)
-    url2="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%s/view/%s/view/%s/job/%s/config.xml"%(quote("LQA Regression Testing"),region,country,testsuite)
-    logger.info(url)
-    goals="clean test -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=${DEFAULT_EMAIL_PREFIX} -DJAWS_NIGHTOWL_MAIL_SERVER=nightowllvs01.qa.paypal.com -DsuiteXmlFile=src/test/resources/configfiles/LqaRegressionTesting/%s/%s.xml -Dpaypal.buildid=4982456"%(country,testsuite)
-    files={'file':('config.xml',open('configuration.xml','rb'))}
-    #res=s.post(url,data=jobconf_str,proxies=None,verify=False)
-    res=s.post(url2,files=files)
-    print res.text
-    f=open("updateItem.html",'w')
-    f.write(res.text)
-    f.close()
+            logger.error("Failed to update job description: %s"%jobname)
+           
+def updateItem(jobname):
+    raise Exception("updateItem is under construction")
 	
 def createItem(region,country,testsuite,chain):
     logger.info("Create test suite %s %s %s %s"%(region,country,testsuite,chain))
-    url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%s/view/%s/view/%s/job/%s/configSubmit"%(quote("LQA Regression Testing"),region,country,testsuite)
+    url=urlparse.urljoin(jen_url,"/view/InternationalQA_View/view/%s/view/%s/view/%s/job/%s/configSubmit"%(quote("LQA Regression Testing"),region,country,testsuite))
 
-def copyItem(srcTestSuite,dstView,region,country,testsuite):
-    url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%s/view/%s/view/%s/createItem"%(quote(dstView),region,country)
-    try:
-        res=s.get(url)
-        logger.info("%s %s %s %s %s already exists"%(dstView,region,country,testsuite,chain))
-        #return
-    except:
-            print ""        
-    logger.info("Copy test suite %s %s %s"%(region,country,testsuite))
-    logger.info(url)
-    json={"name": testsuite, "mode": "copy", "from": srcTestSuite, "Submit": "OK"}
-    res=s.post(url,data=json)
+def copyJob(jobname,jobnewname,viewurl):
+    '''
+    [Test passed]
+    :param jobname:
+    :param jobnewname:
+    :param viewurl:
+    '''
+    json={"name": jobnewname, "mode": "copy", "from": jobname, "Submit": "OK"}
+    copy_url = urlparse.urljoin(viewurl,"createItem")
+    res=s.post(copy_url,data=json)
+    if res.status_code != 200:
+        raise Exception("Failed to copy job %s"%jobname)
 	
-def createJob(dstView,region,country,testsuite,chain):
-    url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%s/view/%s/view/%s/job/%s"%(quote(dstView),region,country,testsuite)
-    try:
-        res=s.get(url)
-        logger.info("%s %s %s %s already exists"%(region,country,testsuite,chain))
-        #return
-    except:
-            print ""
-    #copyItem(testsuite,"LQA Regression Testing",region,country,testsuite)
-    #updateItem(region,country,testsuite,chain)
-    #deleteItem(region,country,testsuite,chain)
+def createJob(jobname,config):
+    raise Exception("craeteJob is under construction")
 	
 def creatTestSuite(country,language,locale,testsuite):
+    '''
+    [deprecated]
+    :param country:
+    :param language:
+    :param locale:
+    :param testsuite:
+    '''
     fsrc=open("%s\\france\\%s"%(workspace,testsuite),'r');
     testsuite=testsuite.replace("frFR","%s%s"%(language,locale))
     fdst=open("%s\\%s\\%s"%(workspace,lower(country),testsuite),'w')
@@ -111,39 +92,67 @@ def creatTestSuite(country,language,locale,testsuite):
     fsrc.close()
     logger.info("Create local test suite file %s %s"%(country,testsuite))
 
-def creat(region,country,language,locale):
-    logger.info("current workspace: "+os.getcwd())
-    if(not os.path.exists(workspace+lower(country))):
-        os.makedirs(workspace+lower(country))
-    chain=""
-    testsuites=os.listdir(workspace+"france")
-    testsuites.reverse()
-    for f in testsuites:
-	logger.info("testsuite file: "+f)
-        creatTestSuite(country,language,locale,f)
-        f=f[:-4].replace("frFR","%s%s"%(language,locale))
-        createJob(region,country,f,chain)
-        chain=f
-def main(region,country,language,locale):
-    logger.info("current workspace: "+os.getcwd())
-    if(not os.path.exists(workspace+lower(country))):
-        os.makedirs(workspace+lower(country))
-    chain=""
-    testsuites=os.listdir(workspace+lower(country))
-    print workspace+lower(country)
-    testsuites.reverse()
-    #print str(testsuites)
-    for f in testsuites:
-	#logger.info("testsuite file: "+f)
-	#if f.find("nl")>0:
-        #        continue
-        f=f[:-4]
-        print f
-        #copyItem(f,"AE Regression Testing",region,country,f+"_Debug")
-        #chain=f
-        updateDescription("LQA Regression Testing",region,country,f)
-	#break      
+def udpateAllJobsInView(viewurl,depth=1,fn,*args, **kwargs):
+    if depth == 0:
+        return
+    view_api_url = urlparse.urljoin(lqa_url, "api/python?depth=%s"%depth)
+    r = s.get(view_api_url)
+    d = eval(r.text)
+    for v in d['views']:
+        udpateAllViewJobs(v['url'],depth=depth-1,fn,*args, **kwargs)
+    fn(d['jobs'],*args, **kwargs)
+
+def syncViewJobs(srcview,dstview,suffix="_Debug",docopy=False):
+    '''
+    [TEST PASSED]
+    supports only two layers, for example the Region in LQA locale view
+    :param srcview: 
+    :param dstview:
+    :param suffix:
+    
+    example:
+        LQAview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/%s/"%region
+        AEview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/"%regsion
+        syncViewJobs(LQAview,AEview)
+    example 2:
+        LQAview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/"
+        AEview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/AE_Flow/"
+        syncViewJobs(LQAview,AEview)
+    
+    '''
+    lqa_url = urlparse.urljoin(jen_url,srcview)
+    ae_url = urlparse.urljoin(jen_url,dstview)
+    lqa_api_url = urlparse.urljoin(lqa_url, "api/python?depth=2")
+    ae_api_url = urlparse.urljoin(ae_url, "api/python?depth=2")
+#    lqa_api_url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/api/python?depth=2"
+#    ae_api_url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/AE_Flow/api/python?depth=2"
+    flag = 0
+    r = s.get(lqa_api_url)
+    a = s.get(ae_api_url)
+    lqa_conf = eval(r.text)
+    ae_conf = eval(a.text)
+    for lv in lqa_conf['views']:
+        av = [ t for t in ae_conf['views'] if lv['name']==t['name']]
+        if len(av) == 0:
+           raise Exception("view %s doesn't exist"%lv['name']) 
+        for lj in lv['jobs']:
+            flag = flag +1
+            aj = [ t for t in av[0]['jobs'] if (lj['name']+suffix).lower()==t['name'].lower() or lj['name'].lower()==(t['name']+suffix).lower()]
+            if len(aj)==0:
+                if docopy:
+                    print lj['name'],av[0]['url']
+                else:
+                    newodename = lj['name']+suffix
+                    copy_job(lj['name'],newodename,av[0]['url'])
+                    updateDescription(newodename)
+                    logger.info("Copied %s to %s under view %s"%(lj['name'],lj['name']+"_Debug",av[0]['url']))
+    print "total job number: %s"%flag
+	
 def UpdateAllDescriptionInview(viewURL):
+    '''
+    [test passed]
+    :param viewURL:
+    '''
     logger.info("Update job description under view %s"%viewURL)
     r = s.get(viewURL+"/api/xml?depth=2")
     jobs = minidom.parseString(r.text.encode("utf8")).getElementsByTagName("job")
@@ -153,8 +162,9 @@ def UpdateAllDescriptionInview(viewURL):
         joburl = job.getElementsByTagName("url")[0].firstChild.nodeValue
         updateDescription(joburl)
         #break
+        
 def login(username,password):
-    url="https://fusion.paypal.com/jenkins/j_acegi_security_check"
+    url=urlparse.urljoin(jen_url,"j_acegi_security_check")
     json={"j_username": username, "j_password": password, "remember_me": "false", "from": ""}
     #res=s.post(url,data=json,verify=doVerify,proxies=None,cert=cert)
     res=s.post(url,data=json,verify=False)
@@ -164,22 +174,16 @@ def login(username,password):
     #os.chdir(os.getcwd()+"\\..\\Localization\\localization-tests\\src\\test\\resources\\configfiles\\LqaRegressionTesting")
     #logger.info("Changed workdir to %s\\..\\Localization\\localization-tests\\src\\test\\resources\\configfiles\\LqaRegressionTesting"%(os.getcwd()))
 
-##region="EMEA"
-##country="Russia"
-##language="ru"
-##locale="RU"
-##url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA%20Regression%20Testing/view/EMEA/view/Russia/job/99_ruRU_ExpressCheckout/configure"
-##def test():
-##    s.get(url,cert=cert)
 if __name__=='__main__':
-    region="APAC"
-    country="China_Localized"
-    language="zh"
-    locale="CN"
-    login("kejiang","Symbio@2013")
+    login(sys.argv[1],sys.argv[2])
+    LQAview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/%s/"%region
+    AEview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/"%regsion
+    LQAview_Flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/"
+    AEview_Flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/AE_Flow/"
+    syncViewJobs(eval(sys.argv[3]),eval(sys.argv[4]),False)
     
-    #UpdateAllDescriptionInview("https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA%20Regression%20Testing/")
-    UpdateAllDescriptionInview("https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE%20Regression%20Testing/")
-    #UpdateAllDescriptionInview("https://fusion.paypal.com/jenkins/view/DEQualityAutomation/")
-    #UpdateAllDescriptionInview("https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/%20New%20Regression/view/EMEA/view/Germany/")
+    #UpdateAllDescriptionInview(urlparse.urljoin(jen_url,"/view/InternationalQA_View/view/LQA%20Regression%20Testing/")
+    #UpdateAllDescriptionInview(urlparse.urljoin(jen_url,"/view/InternationalQA_View/view/AE%20Regression%20Testing/")
+    #UpdateAllDescriptionInview(urlparse.urljoin(jen_url,"/view/DEQualityAutomation/")
+    #UpdateAllDescriptionInview(urlparse.urljoin(jen_url,"/view/InternationalQA_View/view/%20New%20Regression/view/EMEA/view/Germany/")
     
