@@ -141,11 +141,11 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
     """
     
     predefinedParams = """
-        <hudson.model.ParametersDefinitionProperty><parameterDefinitions><hudson.model.StringParameterDefinition><name>stageName</name><description/><defaultValue>stage2dev463</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>SSH_USER</name><description/><defaultValue>ppbuild</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>DEFAULT_EMAIL_PREFIX</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>stageDomain</name><description/><defaultValue>qa</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>%s_NOTIFICATION_EMAIL</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>FAILED_JOBS_NOTIFICATION</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition></parameterDefinitions></hudson.model.ParametersDefinitionProperty>
-    """
+        <hudson.model.ParametersDefinitionProperty><parameterDefinitions><hudson.model.StringParameterDefinition><name>stageName</name><description/><defaultValue>stage2dev463</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>SSH_USER</name><description/><defaultValue>ppbuild</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>DEFAULT_EMAIL_PREFIX</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>stageDomain</name><description/><defaultValue>qa</defaultValue></hudson.model.StringParameterDefinition></parameterDefinitions></hudson.model.ParametersDefinitionProperty>
+    """    
     for jobName in jobsName:
-        if jobName.find("01_daDK_SignUp_Debug")<0:
-            continue
+#        if jobName.find("01_daDK_SignUp_Debug")<0:
+#            continue
         m = re.search("\d+_([^_]{4})_([^_]+)",jobName)
         if not m:
             logger.error("%s is not a valid job name"%jobName)
@@ -158,10 +158,10 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         emailNoelement_tree = element_tree.find("./publishers/hudson.plugins.emailext.ExtendedEmailPublisher")
         if emailNoelement_tree is not None:
             publicsher.remove(emailNoelement_tree)
-        enn = ET.fromstring(email_notfication%(locale,locale,locale,locale,locale,locale))
-        publicsher.append(enn)
+#        enn = ET.fromstring(email_notfication%(locale,locale,locale,locale,locale,locale))
+#        publicsher.append(enn)
         preprop = element_tree.find('./properties')
-        predefinedParamsNode = element_tree.find('./properties/hudson.model.ParametersDefinitionProperty') 
+        predefinedParamsNode = element_tree.find('./properties/hudson.model.ParametersDefinitionProperty')
         if predefinedParamsNode is not None:
             preprop.remove(predefinedParamsNode)
         
@@ -176,8 +176,8 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         LQA_NOTIFICATION_EMAIL = ",".join([e+"@paypal.com" for e in LQA_corp[locale]])
         FAILED_NOTIFICATION_EMAIL = ",".join([e+"@paypal.com" for e in Flow_Owener[flow]])
         
-        predefinedParamsNode = ET.fromstring(predefinedParams%(DEFAULT_EMAIL_PREFIX,locale,LQA_NOTIFICATION_EMAIL,FAILED_NOTIFICATION_EMAIL))
-#        preprop.append(predefinedParamsNode)
+        predefinedParamsNode = ET.fromstring(predefinedParams%(DEFAULT_EMAIL_PREFIX))
+        preprop.append(predefinedParamsNode)
         job.update_config(ET.tostring(element_tree))
         logger.info("%s has been updated"%jobName)
         
@@ -244,17 +244,6 @@ def compare_jobs(d1,d2):
 
 ################ For Debug Only ##############
 if __name__=='__main__':
-#    if len(sys.argv) != 3:
-#        sys.exit()
-#    srcviewurl = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/%s/view/%s/"%(sys.argv[1],sys.argv[2])
-#    dstviewurl = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/view/%s/"%(sys.argv[1],sys.argv[2])
-#    jen = Jenkins(jen_url,"*","*")
-#    copyview(srcviewurl,dstviewurl)
-#    sys.exit()
-#    modify_view_jobs(url,joblist)
-#    modify_view_jobs(url,chain,doChain=False)
-#    modify_view_jobs(url,goals,"-Dpaypal.buildid=5333310","-Dpaypal.buildid=\d+")"
-#    sys.exit()
     usage = """
     This programe is to modify all the jobs under a given view and its sub views.
     python %prog [option][value]...

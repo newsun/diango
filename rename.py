@@ -187,7 +187,7 @@ if __name__=='__main__':
     AEview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/"%region
     LQAview_Flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/"
     AEview_Flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/AE_Flow/"
-    syncViewJobs(eval(sys.argv[3]),eval(sys.argv[4]),docopy=False)
+    syncViewJobs(eval(sys.argv[3]),eval(sys.argv[4]),docopy=True)
     
     #UpdateAllDescriptionInview(urlparse.urljoin(jen_url,"/view/InternationalQA_View/view/LQA%20Regression%20Testing/")
     #UpdateAllDescriptionInview(urlparse.urljoin(jen_url,"/view/InternationalQA_View/view/AE%20Regression%20Testing/")
