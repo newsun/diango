@@ -339,7 +339,7 @@ class Job(JenkinsBase):
         if not new_chain:
             self.update_config(ET.tostring(element_tree))		
             return
-        buildTriggerStr= """
+        buildTriggerStr_particular_parameters= """
 		<hudson.plugins.parameterizedtrigger.BuildTrigger>
 			<configs>
 				<hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
@@ -356,7 +356,10 @@ stageDomain=${stageDomain}</properties>
 			</configs>
 		</hudson.plugins.parameterizedtrigger.BuildTrigger>
 		"""		
-        NewBuildTrigger = ET.fromstring(buildTriggerStr%new_chain)
+        buildTriggerStr_current_build_Parameters ="""
+        <hudson.plugins.parameterizedtrigger.BuildTrigger><configs><hudson.plugins.parameterizedtrigger.BuildTriggerConfig><configs><hudson.plugins.parameterizedtrigger.CurrentBuildParameters/></configs><projects>%s</projects><condition>ALWAYS</condition></hudson.plugins.parameterizedtrigger.BuildTriggerConfig></configs></hudson.plugins.parameterizedtrigger.BuildTrigger>
+        """
+        NewBuildTrigger = ET.fromstring(buildTriggerStr_current_build_Parameters%new_chain)
         #print ET.tostring(publishers)
         publishers.append(NewBuildTrigger)
         #print ET.tostring(publishers)		

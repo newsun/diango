@@ -92,14 +92,14 @@ def creatTestSuite(country,language,locale,testsuite):
     fsrc.close()
     logger.info("Create local test suite file %s %s"%(country,testsuite))
 
-def udpateAllJobsInView(viewurl,depth=1,fn,*args, **kwargs):
+def udpateAllJobsInView(viewurl,depth,fn,*args, **kwargs):
     if depth == 0:
         return
     view_api_url = urlparse.urljoin(lqa_url, "api/python?depth=%s"%depth)
     r = s.get(view_api_url)
     d = eval(r.text)
     for v in d['views']:
-        udpateAllViewJobs(v['url'],depth=depth-1,fn,*args, **kwargs)
+        udpateAllViewJobs(v['url'],fn,depth,*args, **kwargs)
     fn(d['jobs'],*args, **kwargs)
 
 def syncViewJobs(srcview,dstview,suffix="_Debug",docopy=False):
@@ -111,8 +111,9 @@ def syncViewJobs(srcview,dstview,suffix="_Debug",docopy=False):
     :param suffix:
     
     example:
+        region = "NA"
         LQAview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/%s/"%region
-        AEview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/"%regsion
+        AEview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/"%region
         syncViewJobs(LQAview,AEview)
     example 2:
         LQAview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/"
@@ -134,18 +135,20 @@ def syncViewJobs(srcview,dstview,suffix="_Debug",docopy=False):
     for lv in lqa_conf['views']:
         av = [ t for t in ae_conf['views'] if lv['name']==t['name']]
         if len(av) == 0:
-           raise Exception("view %s doesn't exist"%lv['name']) 
+            logger.error("view %s doesn't exist"%lv['name'])
+#           raise Exception("view %s doesn't exist"%lv['name']) 
+            continue
         for lj in lv['jobs']:
             flag = flag +1
             aj = [ t for t in av[0]['jobs'] if (lj['name']+suffix).lower()==t['name'].lower() or lj['name'].lower()==(t['name']+suffix).lower()]
             if len(aj)==0:
                 if docopy:
-                    print lj['name'],av[0]['url']
-                else:
                     newodename = lj['name']+suffix
-                    copy_job(lj['name'],newodename,av[0]['url'])
+                    copyJob(lj['name'],newodename,av[0]['url'])
                     updateDescription(newodename)
                     logger.info("Copied %s to %s under view %s"%(lj['name'],lj['name']+"_Debug",av[0]['url']))
+                else:
+                    print lj['name'],av[0]['url']
     print "total job number: %s"%flag
 	
 def UpdateAllDescriptionInview(viewURL):
@@ -176,11 +179,15 @@ def login(username,password):
 
 if __name__=='__main__':
     login(sys.argv[1],sys.argv[2])
+    if sys.argv[3]=="LQAview" or sys.argv[3]=="AEview":
+        region = sys.argv[5]
+    else:
+        region = ""
     LQAview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/%s/"%region
-    AEview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/"%regsion
+    AEview = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/%s/"%region
     LQAview_Flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/"
     AEview_Flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/AE_Flow/"
-    syncViewJobs(eval(sys.argv[3]),eval(sys.argv[4]),False)
+    syncViewJobs(eval(sys.argv[3]),eval(sys.argv[4]),docopy=False)
     
     #UpdateAllDescriptionInview(urlparse.urljoin(jen_url,"/view/InternationalQA_View/view/LQA%20Regression%20Testing/")
     #UpdateAllDescriptionInview(urlparse.urljoin(jen_url,"/view/InternationalQA_View/view/AE%20Regression%20Testing/")

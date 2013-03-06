@@ -6,6 +6,7 @@ from template import *
 from optparse import OptionParser
 import re
 import ConfigParser
+import xml.etree.ElementTree as ET
 #try:
 #	from jenkinsapi.jenkins import Jenkins
 #except ImportError:
@@ -29,6 +30,8 @@ logger.addHandler(console)
 jen_url = "https://fusion.paypal.com/jenkins/"
 jen = None
 jobs = []
+LQA_corp = {"ruEE":["rlux"],"deCH":["rlux"],"deAT":["kejiang"],"daDK":["tbentzen"],"deDE":["aschilb"],"enGB":["dxiong"],"esAR":["elaguilar"],"esES":["pbrahm"],"esMX":["edugutierrez"],"frBE":["hsenouni"],"frCA":["vung","jsauvage"],"frCH":["vung"],"frFR":["jsauvage"],"heIL":["rshapiro"],"idID":["alaksanawati"],"itIT":["sciciliot"],"jaJP":["mkakeno"],"nlBE":["kocheng"],"nlNL":["kocheng"],"noNO":["hmoe"],"plPL":["rkonik"],"ptBR":["lheck"],"ptPT":["sealmeida"],"svSE":["richuang"],"thTH":["asrijanken"],"trTR":["yyakin"],"ruRU":["otulasynova"],"ruRU":["nafomina"],"zhC2":["klan"],"zhCN":["shuan"],"zhTW":["adguo"],"zhHK":["kamwong"],"enAU":["cdennington"]}
+Flow_Owener = {"SignUp":["richuang","belzhang","kejiang","rlux"],"TransferFunds":["kejiang","belzhang","kejiang","rlux"],"SendMoney":["bozhou","belzhang","kejiang","rlux"],"RequestMoney":["rlux","belzhang","kejiang","rlux"],"Transactions":["bozhou","belzhang","kejiang","rlux"],"Bank":["kejiang","belzhang","kejiang","rlux"],"CreditCard":["rlux","belzhang","kejiang","rlux"],"Profile":["bozhou","belzhang","kejiang","rlux"],"Buttons":["kejiang","belzhang","kejiang","rlux"],"WebAccept":["jvely","belzhang","kejiang","rlux"],"MainTabFeesFooter":["jvely","belzhang","kejiang","rlux"],"PasswordRecovery":["richuang","belzhang","kejiang","rlux"],"Limits":["richuang","belzhang","kejiang","rlux"],"ResolutionCenter":["rlux","belzhang","kejiang","rlux"],"ExpressCheckout":["belzhang","belzhang","kejiang","rlux"]}
 
 def copyview(srcviewurl, dstViewurl,doAdd=False,suffix="_Debug"):
     srcview = jen.get_view_by_url(srcviewurl)
@@ -63,6 +66,8 @@ def chain(jobsName,dochain=True):
     jobsName.reverse()
     chain = None
     for jobName in jobsName:
+        if jobName.find("_jaJP_")>0:
+            continue
         job = jen[jobName]
         job.modify_chain(chain)
         logger.info("%s is chained to %s"%(chain,jobName))
@@ -77,6 +82,105 @@ def goals(jobsName,newStr=None,oldStr=None,count=-1):
         job.modify_goals(goalsStr%template[jobName.endswith("_Debug") and jobName[:-6] or jobName])
         logger.info("goals of %s has been updated"%jobName)
 
+def config(jobsName):
+    assert isinstance(jobsName,list)
+    email_notfication= """
+    <hudson.plugins.emailext.ExtendedEmailPublisher><recipientList></recipientList><configuredTriggers><hudson.plugins.emailext.plugins.trigger.UnstableTrigger><email><recipientList>${%s_NOTIFICATION_EMAIL},${FAILED_JOBS_NOTIFICATION}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
+
+We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
+
+Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
+
+Thanks,
+Automation Team
+DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.UnstableTrigger><hudson.plugins.emailext.plugins.trigger.FailureTrigger><email><recipientList>${%s_NOTIFICATION_EMAIL},${FAILED_JOBS_NOTIFICATION}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
+
+We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
+
+Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
+
+Thanks,
+Automation Team
+DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com
+</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.FailureTrigger><hudson.plugins.emailext.plugins.trigger.StillFailingTrigger><email><recipientList>${%s_NOTIFICATION_EMAIL},${FAILED_JOBS_NOTIFICATION}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
+
+We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
+
+Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
+
+Thanks,
+Automation Team
+DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.StillFailingTrigger><hudson.plugins.emailext.plugins.trigger.SuccessTrigger><email><recipientList>${%s_NOTIFICATION_EMAIL}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
+
+We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
+
+Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
+
+Thanks,
+Automation Team
+DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.SuccessTrigger><hudson.plugins.emailext.plugins.trigger.FixedTrigger><email><recipientList>${%s_NOTIFICATION_EMAIL}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
+
+We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
+
+Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
+
+Thanks,
+Automation Team
+DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.FixedTrigger><hudson.plugins.emailext.plugins.trigger.StillUnstableTrigger><email><recipientList>${%s_NOTIFICATION_EMAIL},${FAILED_JOBS_NOTIFICATION}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
+
+We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
+
+Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
+
+Thanks,
+Automation Team
+DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.StillUnstableTrigger></configuredTriggers><contentType>default</contentType><defaultSubject>$DEFAULT_SUBJECT</defaultSubject><defaultContent>$DEFAULT_CONTENT</defaultContent><attachmentsPattern/></hudson.plugins.emailext.ExtendedEmailPublisher>
+    """
+    stringPara = """
+    <hudson.model.StringParameterDefinition><name>%s</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition>
+    """
+    
+    predefinedParams = """
+        <hudson.model.ParametersDefinitionProperty><parameterDefinitions><hudson.model.StringParameterDefinition><name>stageName</name><description/><defaultValue>stage2dev463</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>SSH_USER</name><description/><defaultValue>ppbuild</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>DEFAULT_EMAIL_PREFIX</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>stageDomain</name><description/><defaultValue>qa</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>%s_NOTIFICATION_EMAIL</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>FAILED_JOBS_NOTIFICATION</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition></parameterDefinitions></hudson.model.ParametersDefinitionProperty>
+    """
+    for jobName in jobsName:
+        if jobName.find("01_daDK_SignUp_Debug")<0:
+            continue
+        m = re.search("\d+_([^_]{4})_([^_]+)",jobName)
+        if not m:
+            logger.error("%s is not a valid job name"%jobName)
+            continue
+        job = jen[jobName]
+        locale = m.groups()[0]
+        flow = m.groups()[1]
+        element_tree = job._get_config_element_tree()
+        publicsher = element_tree.find('./publishers')
+        emailNoelement_tree = element_tree.find("./publishers/hudson.plugins.emailext.ExtendedEmailPublisher")
+        if emailNoelement_tree is not None:
+            publicsher.remove(emailNoelement_tree)
+        enn = ET.fromstring(email_notfication%(locale,locale,locale,locale,locale,locale))
+        publicsher.append(enn)
+        preprop = element_tree.find('./properties')
+        predefinedParamsNode = element_tree.find('./properties/hudson.model.ParametersDefinitionProperty') 
+        if predefinedParamsNode is not None:
+            preprop.remove(predefinedParamsNode)
+        
+        if locale not in LQA_corp:
+            LQA_corp[locale]=["belzhang"]
+            logger.warning("%s doesn't have LQA assigned"%locale)
+        if flow not in Flow_Owener:
+            logger.error("%s is a not supported flow"%flow)
+            continue
+        
+        DEFAULT_EMAIL_PREFIX = Flow_Owener[flow][0]
+        LQA_NOTIFICATION_EMAIL = ",".join([e+"@paypal.com" for e in LQA_corp[locale]])
+        FAILED_NOTIFICATION_EMAIL = ",".join([e+"@paypal.com" for e in Flow_Owener[flow]])
+        
+        predefinedParamsNode = ET.fromstring(predefinedParams%(DEFAULT_EMAIL_PREFIX,locale,LQA_NOTIFICATION_EMAIL,FAILED_NOTIFICATION_EMAIL))
+#        preprop.append(predefinedParamsNode)
+        job.update_config(ET.tostring(element_tree))
+        logger.info("%s has been updated"%jobName)
+        
 def defaultparameters(jobsName,params={}):
     assert isinstance(jobsName,list)
     jobsName.sort()
@@ -131,9 +235,11 @@ def compare_jobs(d1,d2):
     modify_view_jobs(s2,joblist)
     joblist2 = jobs
     jobs = []
-#    ae = [a[:-6] for a in ae]
-#    d1 = list(set(ae)-set(lqa))
-#    d2 = list(set(lqa)-set(ae))
+    ae = [a[:-6] for a in ae]
+    d1 = list(set(ae)-set(lqa))
+    d2 = list(set(lqa)-set(ae))
+    print d1
+    print d2
     return joblist1, joblist2
 
 ################ For Debug Only ##############
@@ -160,8 +266,8 @@ if __name__=='__main__':
     parser = OptionParser(usage=usage,version="%prog 1.0")
     parser.add_option("-u","--username",dest="username",help="user name to login jenkins")
     parser.add_option("-p","--password",dest="password",help="user password to login jenkins")
-    parser.add_option("-i","--view",dest="view",help="which view you want to operate. available: AE|LQA")
-#    parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
+#    parser.add_option("-i","--view",dest="view",help="which view you want to operate. available: AE|LQA")
+    parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
     parser.add_option("-c","--dochain",dest="dochain",default = True, help="chain or unchain the jobs under a view")
     parser.add_option("-o","--oldStr",dest="oldStr",help="the old string (or a wildword expression) going to replace by new string, optioanl, default None")
@@ -210,5 +316,9 @@ if __name__=='__main__':
         modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
     elif options.action == "update_email":
         modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
+    elif options.action == "compare_jobs":
+        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
+    elif options.action == "config":
+        modify_view_jobs(options.url,eval(options.action))
     else:
         raise Exception("invalid action")
