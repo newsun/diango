@@ -3,7 +3,6 @@ import random
 from urllib import *
 import logging
 from jenkinsapi.jenkins import Jenkins
-from template import *
 from optparse import OptionParser
 import re
 import ConfigParser
@@ -95,12 +94,19 @@ def goals(jobsName,newStr=None,oldStr=None,count=-1):
     goalsStr = "clean test -U -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=${DEFAULT_EMAIL_PREFIX} -DJAWS_NIGHTOWL_MAIL_SERVER=nightowllvs01.qa.paypal.com -DsuiteXmlFile=%s -Dpaypal.buildid=%s"
     jobsName.sort()
     for jobName in jobsName:
-        jn = jobName.endswith("_Debug") and jobName[:-6] or jobName
-        if jn not in template:
-            logger.warning("%s is not in testsuite file defined"%jobName)
-            continue
         job = jen[jobName]
-        job.modify_goals(goalsStr%(template[jn],random.randint(5000000,5999999)))
+        config = job.get_config()
+        element_tree = ET.fromstring(config)
+        goals = element_tree.find('./goals')
+#        buildid = "-Dpaypal.buildid=%s"%random.randint(5000000,5999999)
+        buildid = ""
+        m = re.search(" -DsuiteXmlFile=(\S+\.xml) ",goals.text)
+        if not m or len(m.groups())!=1:
+            logger.error("Can't extract suite file in job %s"%jobName)
+            continue
+        testsuite = m.groups()[0]
+        goals.text = goalsStr%("${%s_DEFAULT_EMAIL_PREFIX}"%locale,testsuite,buildid)
+        
         logger.info("goals of %s has been updated"%jobName)
 
 def config(jobsName):
@@ -179,8 +185,8 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
     for jobName in jobsName:
 #        if jobName.find("01_daDK_SignUp_Debug")<0:
 #            continue
-#        if jobName.find("01_")<0:
-#            continue
+        if jobName.find("deDE")<0:
+            continue
 #        print jobName
         m = re.search("(\d+_([^_]{4})_([^_]+)(_Part\d+)?)(_[D|d]ebug)?",jobName)
         jn =  m.groups()[0]
@@ -205,16 +211,15 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         permissionNode = ET.fromstring(permissionStr)
         preprop.append(permissionNode)
         #############################################change goals#############################################
-        if jn in template:
-            goals = element_tree.find('./goals')
-#            buildid = "-Dpaypal.buildid=%s"%random.randint(5000000,5999999)
-            buildid = ""
-#            goals.text = goalsStr%("${%s_DEFAULT_EMAIL_PREFIX}"%locale,template[jn],buildid)
-            goals.text = goalsStr%("${%s_DEFAULT_EMAIL_PREFIX}"%locale,template[jn],buildid)
-        else:
-            goals = element_tree.find('./goals')
-            print jobName, goals.text
-            logger.warn("%s has no testsuite file defined"%jobName)
+        goals = element_tree.find('./goals')
+#        buildid = "-Dpaypal.buildid=%s"%random.randint(5000000,5999999)
+        buildid = ""
+        m = re.search(" -DsuiteXmlFile=(\S+\.xml) ",goals.text)
+        if not m or len(m.groups())!=1:
+            logger.error("Can't extract suite file in job %s"%jobName)
+            continue
+        testsuite = m.groups()[0]
+        goals.text = goalsStr%("${%s_DEFAULT_EMAIL_PREFIX}"%locale,testsuite,buildid)
         #############################################change email notification################################
         publicsher = element_tree.find('./publishers')
         emailNoelement_tree = element_tree.find("./publishers/hudson.plugins.emailext.ExtendedEmailPublisher")
@@ -223,9 +228,7 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         LQA_NOTIFICATION_EMAIL = "${%s_DEFAULT_EMAIL_PREFIX}@paypal.com"%locale
         enn = ET.fromstring(email_notfication%(LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL))
         publicsher.append(enn)
-
         ##############################################update the predefined parameter##########################
-        
         predefinedParamsNode = element_tree.find('./properties/hudson.model.ParametersDefinitionProperty')
         if predefinedParamsNode is not None:
             preprop.remove(predefinedParamsNode)
