@@ -189,12 +189,12 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
             continue
 #        print jobName
         m = re.search("(\d+_([^_]{4})_([^_]+)(_Part\d+)?)(_[D|d]ebug)?",jobName)
+        if not m or len(m.groups())<3:
+            logger.error("%s is not a valid job name"%jobName)
+            continue
         jn =  m.groups()[0]
         locale = m.groups()[1]
         flow = m.groups()[2]
-        if not m:
-            logger.error("%s is not a valid job name"%jobName)
-            continue
         if locale not in LQA_corp:
             LQA_corp[locale]=["belzhang"]
             logger.warning("%s doesn't have LQA assigned"%jobName)
@@ -244,9 +244,9 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         try:
             job.update_config(ET.tostring(element_tree))
         except:
-            logger.error("%s fail to configure"%jobName)
-            continue
-        logger.info("%s has been updated"%jobName)
+            logger.error("Failed to configure %s"%jobName)
+        else:
+            logger.info("Updated %s"%jobName)
         
 def defaultparameters(jobsName,params={}):
     assert isinstance(jobsName,list)
