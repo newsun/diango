@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 ###############################################
 ########### Logging Configuration #############
 ###############################################
-logging.basicConfig( level= logging.DEBUG,\
+logging.basicConfig( level= logging.INFO,\
                  format= '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',\
                  datefmt= '%a, %d %b %Y %H:%M:%S',\
                  filename= 'myapp.log',\
@@ -195,11 +195,8 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         if flow not in Flow_Owener:
             logger.error("%s is a not supported flow"%jobName)
             continue
-        logger.debug("Flag 1")
         job = jen[jobName]
-        logger.debug("Flag 2")
         config = job.get_config()
-        logger.debug("Flag 3")
         element_tree = ET.fromstring(config)
         #############################################permission change#############################################
         preprop = element_tree.find('./properties')
@@ -241,13 +238,11 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
 #        predefinedParamsNode = ET.fromstring(predefinedParams%(locale,xx_DEFAULT_EMAIL_PREFIX))
         predefinedParamsNode = ET.fromstring(predefinedParams%(locale,xx_DEFAULT_EMAIL_PREFIX,FAILED_NOTIFICATION_EMAIL))
         preprop.append(predefinedParamsNode)
-        logger.debug("Flag 4")
         try:
             job.update_config(ET.tostring(element_tree))
         except:
             logger.error("%s fail to configure"%jobName)
             continue
-        logger.debug("Flag 5")
         logger.info("%s has been updated"%jobName)
         
 def defaultparameters(jobsName,params={}):
