@@ -185,8 +185,8 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
     for jobName in jobsName:
 #        if jobName.find("01_daDK_SignUp_Debug")<0:
 #            continue
-        if jobName.find("deDE")<0:
-            continue
+#        if jobName.find("deDE")<0:
+#            continue
 #        print jobName
         m = re.search("(\d+_([^_]{4})_([^_]+)(_Part\d+)?)(_[D|d]ebug)?",jobName)
         if not m or len(m.groups())<3:
