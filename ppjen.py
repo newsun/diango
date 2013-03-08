@@ -181,7 +181,7 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
 #            continue
 #        if jobName.find("01_")<0:
 #            continue
-        print jobName
+#        print jobName
         m = re.search("(\d+_([^_]{4})_([^_]+)(_Part\d+)?)(_[D|d]ebug)?",jobName)
         jn =  m.groups()[0]
         locale = m.groups()[1]
