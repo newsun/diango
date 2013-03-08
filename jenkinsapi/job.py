@@ -43,13 +43,16 @@ class Job(JenkinsBase):
             'hg' : lambda  element_tree: [element_tree.find('./scm/branch')],
             None : lambda element_tree: []
             }
-        JenkinsBase.__init__( self, url )
-
+        JenkinsBase.__init__( self, url,poll=False )
+    def data(self):
+        if self._data == None:
+            self.poll()
+        return self._data
     def id( self ):
-        return self._data["name"]
+        return self.data()["name"]
 
     def __str__(self):
-        return self._data["name"]
+        return self.data()["name"]
 
     def get_jenkins_obj(self):
         return self.jenkins
@@ -125,9 +128,9 @@ class Job(JenkinsBase):
         """Gets a buildid for a given type of build"""
         KNOWNBUILDTYPES=["lastSuccessfulBuild", "lastBuild", "lastCompletedBuild"]
         assert buildtype in KNOWNBUILDTYPES
-        if self._data[buildtype] == None:
+        if self.data()[buildtype] == None:
             return None
-        buildid = self._data[buildtype]["number"]
+        buildid = self.data()[buildtype]["number"]
         assert type(buildid) == int, "Build ID should be an integer, got %s" % repr( buildid )
         return buildid
 
@@ -150,16 +153,16 @@ class Job(JenkinsBase):
         return self._buildid_for_type(buildtype="lastCompletedBuild")
 
     def get_build_dict(self):
-        if not self._data.has_key( "builds" ):
+        if not self.data().has_key( "builds" ):
             raise NoBuildData( repr(self) )
-        return dict( ( a["number"], a["url"] ) for a in self._data["builds"] )
+        return dict( ( a["number"], a["url"] ) for a in self.data()["builds"] )
 
     def get_revision_dict(self):
         """
         Get dictionary of all revisions with a list of buildnumbers (int) that used that particular revision
         """
         revs = defaultdict(list)
-        if 'builds' not in self._data:
+        if 'builds' not in self.data():
             raise NoBuildData( repr(self))
         for buildnumber in self.get_build_ids():
             revs[self.get_build(buildnumber).get_revision()].append(buildnumber)
@@ -182,7 +185,7 @@ class Job(JenkinsBase):
         """
         Get the last build
         """
-        buildinfo = self._data["lastBuild"]
+        buildinfo = self.data()["lastBuild"]
         return Build( buildinfo["url"], buildinfo["number"], job=self )
 
 
@@ -230,7 +233,7 @@ class Job(JenkinsBase):
 
     def is_queued(self):
         self.poll()
-        return self._data["inQueue"]
+        return self.data()["inQueue"]
 
     def is_running(self):
         self.poll()
@@ -413,7 +416,7 @@ stageDomain=${stageDomain}</properties>
         """
         downstream_jobs = []
         try:
-            for j in self._data['downstreamProjects']:
+            for j in self.data()['downstreamProjects']:
                 downstream_jobs.append(self.get_jenkins_obj().get_job(j['name']))
         except KeyError:
             return []
@@ -426,7 +429,7 @@ stageDomain=${stageDomain}</properties>
         """
         downstream_jobs = []
         try:
-            for j in self._data['downstreamProjects']:
+            for j in self.data()['downstreamProjects']:
                 downstream_jobs.append(j['name'])
         except KeyError:
             return []
@@ -439,7 +442,7 @@ stageDomain=${stageDomain}</properties>
         """
         upstream_jobs = []
         try:
-            for j in self._data['upstreamProjects']:
+            for j in self.data()['upstreamProjects']:
                 upstream_jobs.append(j['name'])
         except KeyError:
             return []
@@ -452,7 +455,7 @@ stageDomain=${stageDomain}</properties>
         """
         upstream_jobs = []
         try:
-            for j in self._data['upstreamProjects']:
+            for j in self.data()['upstreamProjects']:
                 upstream_jobs.append(self.get_jenkins_obj().get_job(j['name']))
         except KeyError:
             return []
