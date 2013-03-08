@@ -1,0 +1,7 @@
+.settings/
+.project
+.classpath
+*.swp
+*.log
+*.pyc
+.pydevproject
