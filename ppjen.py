@@ -77,8 +77,8 @@ def chain(jobsName,dochain=True):
     jobsName.reverse()
     chain = None
     for jobName in jobsName:
-        if jobName.find("_jaJP_")>0:
-            continue
+#        if jobName.find("_jaJP_")>0:
+#            continue
         job = jen[jobName]
         job.modify_chain(chain)
         logger.info("%s => %s"%(jobName,chain))
