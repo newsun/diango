@@ -405,7 +405,8 @@ stageDomain=${stageDomain}</properties>
         Update the config.xml to the job
         Also refresh the BeautifulSoup object since the config has changed
         """
-        post_data = self.post_data("%(baseurl)s/config.xml" % self.__dict__, config)
+        url = urlparse.urljoin("%(baseurl)s" % self.__dict__,"config.xml")
+        post_data = self.post_data(url, config)
         self._element_tree = ET.fromstring(config)
         return post_data
 
