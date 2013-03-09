@@ -26,23 +26,26 @@ jen_url = "https://fusion.paypal.com/jenkins/"
 jen = None
 jobs = []
 LQA_corp = {"ruEE":["belzhang"],"deCH":["belzhang"],"deAT":["belzhang"],"daDK":["tbentzen"],"deDE":["aschilb"],"enGB":["dxiong"],"esAR":["elaguilar"],"esES":["pbrahm"],"esMX":["edugutierrez"],"frBE":["hsenouni"],"frCA":["vung","jsauvage"],"frCH":["vung"],"frFR":["jsauvage"],"heIL":["rshapiro"],"idID":["alaksanawati"],"itIT":["acantonetti"],"jaJP":["mkakeno"],"nlBE":["kocheng"],"nlNL":["kocheng"],"noNO":["hmoe"],"plPL":["rkonik"],"ptBR":["lheck"],"ptPT":["sealmeida"],"svSE":["richuang"],"thTH":["asrijanken"],"trTR":["yyakin"],"ruRU":["otulasynova"],"ruRU":["nafomina"],"zhC2":["klan"],"zhCN":["shuan"],"zhTW":["adguo"],"zhHK":["kamwong"],"enAU":["cdennington"]}
-Flow_Owener = {"SignUp":["richuang","belzhang","rlux"],"TransferFunds":["belzhang","rlux"],"SendMoney":["bozhou","belzhang","rlux"],"RequestMoney":["rlux","belzhang","rlux"],"Transactions":["bozhou","belzhang","rlux"],"Bank":["belzhang","rlux"],"CreditCard":["rlux","belzhang","rlux"],"Profile":["bozhou","belzhang","rlux"],"Buttons":["belzhang","rlux"],"WebAccept":["jvely","belzhang","rlux"],"MainTabFeesFooter":["jvely","belzhang","rlux"],"PasswordRecovery":["richuang","belzhang","rlux"],"Limits":["richuang","belzhang","rlux"],"ResolutionCenter":["rlux","belzhang","rlux"],"ExpressCheckout":["belzhang","rlux"],"ExpressCheckoutOffeBay":["rugurumurthy"],"ExpressCheckoutOneBay":["rugurumurthy"]}
+Flow_Owener = {"SignUp":["richuang","belzhang","rlux"],"TransferFunds":["belzhang","rlux"],"SendMoney":["bozhou","belzhang","rlux"],"RequestMoney":["rlux","belzhang","rlux"],"Transactions":["bozhou","belzhang","rlux"],"Bank":["belzhang","rlux"],"CreditCard":["rlux","belzhang","rlux"],"Profile":["bozhou","belzhang","rlux"],"Buttons":["belzhang","rlux"],"WebAccept":["jvely","belzhang","rlux"],"MainTabFeesFooter":["jvely","belzhang","rlux"],"PasswordRecovery":["richuang","belzhang","rlux"],"Limits":["richuang","belzhang","rlux"],"ResolutionCenter":["rlux","belzhang","rlux"],"ExpressCheckout":["belzhang","rlux"]}
 
 DE_SpecialFlow={
-"BusinessSignUp":"rugurumurthy",
-"BusinessSolutions":"rugurumurthy",
-"ConfirmBank":"rugurumurthy",
-"ConfirmBank":"rugurumurthy",
-"ConfirmBank":"rugurumurthy",
-"ConfirmBank":"rugurumurthy",
-"EFTTransactions":"rugurumurthy",
-"EFTTransactions":"rugurumurthy",
-"MiscDETransactions":"rugurumurthy",
-"mEFTSplashPage":"rugurumurthy",
-"iEFTSplashPage":"rugurumurthy",
-"MainTabFeesFooterDE":"rugurumurthy",
-"SecurityHelpCenterDE":"rugurumurthy"
+"BusinessSignUp":["rugurumurthy"],
+"BusinessSolutions":["rugurumurthy"],
+"ConfirmBank":["rugurumurthy"],
+"ConfirmBank":["rugurumurthy"],
+"ConfirmBank":["rugurumurthy"],
+"ConfirmBank":["rugurumurthy"],
+"EFTTransactions":["rugurumurthy"],
+"EFTTransactions":["rugurumurthy"],
+"MiscDETransactions":["rugurumurthy"],
+"mEFTSplashPage":["rugurumurthy"],
+"iEFTSplashPage":["rugurumurthy"],
+"MainTabFeesFooterDE":["rugurumurthy"],
+"ExpressCheckoutOffeBay":["rugurumurthy"],
+"ExpressCheckoutOneBay":["rugurumurthy"],
+"SecurityHelpCenterDE":["rugurumurthy"]
 }
+Flow_Owener.update(DE_SpecialFlow)
 
 def copyview(srcviewurl, dstViewurl,doAdd=False,suffix="_Debug"):
     srcview = jen.get_view_by_url(srcviewurl)
@@ -176,7 +179,6 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
     predefinedParams = """
         <hudson.model.ParametersDefinitionProperty><parameterDefinitions><hudson.model.StringParameterDefinition><name>stageName</name><description/><defaultValue>stage2dev463</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>SSH_USER</name><description/><defaultValue>ppbuild</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>stageDomain</name><description/><defaultValue>qa</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>%s_DEFAULT_EMAIL_PREFIX</name><description>Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable,Failure,Still Failing,Success,Fixed or Still Unstable.</description><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>FAILED_JOBS_NOTIFICATION</name><description>whom will be notified when this job is Unstable,Failure,Still Failing,or Still Unstable. This can be a emails list.</description><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition></parameterDefinitions></hudson.model.ParametersDefinitionProperty>
     """  
-    Flow_Owener.update(DE_SpecialFlow)
     for jobName in jobsName:
 #        if jobName.find("01_daDK_SignUp_Debug")<0:
 #            continue
