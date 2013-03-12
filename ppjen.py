@@ -25,7 +25,8 @@ logger.addHandler(console)
 jen_url = "https://fusion.paypal.com/jenkins/"
 jen = None
 jobs = []
-LQA_corp = {"ruEE":["belzhang"],"deCH":["belzhang"],"deAT":["belzhang"],"daDK":["tbentzen"],"deDE":["aschilb"],"enGB":["dxiong"],"esAR":["elaguilar"],"esES":["pbrahm"],"esMX":["edugutierrez"],"frBE":["hsenouni"],"frCA":["vung","jsauvage"],"frCH":["vung"],"frFR":["jsauvage"],"heIL":["rshapiro"],"idID":["alaksanawati"],"itIT":["acantonetti"],"jaJP":["mkakeno"],"nlBE":["kocheng"],"nlNL":["kocheng"],"noNO":["hmoe"],"plPL":["rkonik"],"ptBR":["lheck"],"ptPT":["sealmeida"],"svSE":["richuang"],"thTH":["asrijanken"],"trTR":["yyakin"],"ruRU":["otulasynova"],"ruRU":["nafomina"],"zhC2":["klan"],"zhCN":["shuan"],"zhTW":["adguo"],"zhHK":["kamwong"],"enAU":["cdennington"]}
+LQA_corp = {"ruEE":["belzhang"],"deCH":["belzhang"],"deAT":["belzhang"],"daDK":["tbentzen"],"deDE":["aschilb"],"enGB":["dxiong"],"esAR":["pbrahm"],"esES":["pbrahm"],"esMX":["edugutierrez"],"frBE":["hsenouni"],"frCA":["jfeing"],"frCH":["vung"],"frFR":["jsauvage"],"heIL":["rshapiro"],"idID":["alaksanawati"],"itIT":["acantonetti"],"jaJP":["mkakeno"],"nlBE":["kocheng"],"nlNL":["kocheng"],"noNO":["hmoe"],"plPL":["rkonik"],"ptBR":["lheck"],"ptPT":["sealmeida"],"svSE":["ghansson"],"thTH":["asrijanken"],"trTR":["yyakin"],"ruRU":["otulasynova"],"ruRU":["nafomina"],"zhC2":["klan"],"zhCN":["shuan"],"zhTW":["adguo"],"zhHK":["kamwong"],"enAU":["cdennington"],"default":["lolu"]}
+#LQA_corp = {"daDK":["tbentzen"],"deDE":["aschilb"],"enGB":["dxiong"],"esES":["pbrahm"],"frCA":["jfeing"],"frFR":["jsauvage"],"heIL":["rshapiro"],"itIT":["acantonetti"],"jaJP":["mkakeno"],"nlNL":["kocheng"],"noNO":["ndahl"],"plPL":["rkonik"],"ptBR":["lheck"],"ptPT":["sealmeida"],"svSE":["ghansson"],"thTH":["asrijanken"],"trTR":["yyakin"],"ruRU":["otulasynova"],"ruRU":["nafomina"],"zhC2":["klan"],"zhHK":["kamwong"],"enAU":["cdennington"],"default":["lolu"]}
 Flow_Owener = {"SignUp":["richuang","belzhang","rlux"],"TransferFunds":["belzhang","rlux"],"SendMoney":["bozhou","belzhang","rlux"],"RequestMoney":["rlux","belzhang","rlux"],"Transactions":["bozhou","belzhang","rlux"],"Bank":["belzhang","rlux"],"CreditCard":["rlux","belzhang","rlux"],"Profile":["bozhou","belzhang","rlux"],"Buttons":["belzhang","rlux"],"WebAccept":["jvely","belzhang","rlux"],"MainTabFeesFooter":["jvely","belzhang","rlux"],"PasswordRecovery":["richuang","belzhang","rlux"],"Limits":["richuang","belzhang","rlux"],"ResolutionCenter":["rlux","belzhang","rlux"],"ExpressCheckout":["belzhang","rlux"]}
 
 DE_SpecialFlow={
@@ -187,7 +188,7 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
     for jobName in jobsName:
 #        if jobName.find("01_daDK_SignUp_Debug")<0:
 #            continue
-#        if jobName.find("deDE")<0:
+#        if jobName.find(esAR")<0 and jobName.find("itIT")<0 and jobName.find("frCA")<0 and jobName.find("noNO")<0 and jobName.find("svSE")<0:
 #            continue
 #        print jobName
         m = re.search("(\d+_([^_]{4})_([^_]+)(_Part\d+)?)(_[D|d]ebug)?",jobName)
@@ -198,7 +199,7 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         locale = m.groups()[1]
         flow = m.groups()[2]
         if locale not in LQA_corp:
-            LQA_corp[locale]=["belzhang"]
+            LQA_corp[locale]=LQA_corp["default"]
             logger.warning("%s doesn't have LQA assigned"%jobName)
         if flow not in Flow_Owener:
             logger.error("%s is a not supported flow"%jobName)
@@ -214,13 +215,15 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         preprop.append(permissionNode)
         #############################################change goals#############################################
         goals = element_tree.find('./goals')
-#        buildid = "-Dpaypal.buildid=%s"%random.randint(5000000,5999999)
-        buildid = ""
-        m = re.search(" -DsuiteXmlFile=(\S+\.xml) ",goals.text)
-        if not m or len(m.groups())!=1:
+        m = re.search(" -DsuiteXmlFile=(\S+\.xml)\s*(-Dpaypal.buildid=\d+)?",goals.text)
+        if not m or len(m.groups())<1:
             logger.error("Can't extract suite file in job %s"%jobName)
             continue
         testsuite = m.groups()[0]
+        #        buildid = ""
+        random_buildid = "-Dpaypal.buildid=%s"%random.randint(5000000,5999999)
+        current_buildid = m.groups()[1]
+        buildid =  current_buildid and current_buildid or random_buildid
         goals.text = goalsStr%("${%s_DEFAULT_EMAIL_PREFIX}"%locale,testsuite,buildid)
         #############################################change email notification################################
         publicsher = element_tree.find('./publishers')
