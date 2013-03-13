@@ -90,6 +90,7 @@ def goals(jobsName,newStr=None,oldStr=None,count=-1):
         goals.text = goalsStr%("${%s_DEFAULT_EMAIL_PREFIX}"%locale,testsuite,buildid)
         
         logger.info("goals of %s has been updated"%jobName)
+        
 def getPermissionList():
     permType = ["hudson.model.Item.Workspace","hudson.model.Item.Build","hudson.model.Item.Cancel","hudson.model.Run.Update","hudson.model.Item.ExtendedRead","hudson.model.Item.Read","hudson.scm.SCM.Tag","hudson.model.Run.Delete","hudson.model.Item.Configure","hudson.model.Item.Delete"]
     ae = conf.options("AUTOMATION")
@@ -100,64 +101,46 @@ def getPermissionList():
     pStr = "<hudson.security.AuthorizationMatrixProperty>%s%s</hudson.security.AuthorizationMatrixProperty>"%(perms,anonymous)
     return pStr
 
+def getEmailNotification(lqarecipient,aerecipient_list):
+    mail = """<email><recipientList>%s</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
+
+We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
+
+Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
+
+Thanks,
+Automation Team
+DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email>
+"""
+    aerecipient_list    
+    email_notfications      = "<hudson.plugins.emailext.ExtendedEmailPublisher><recipientList></recipientList><configuredTriggers>%s</configuredTriggers><contentType>default</contentType><defaultSubject>$DEFAULT_SUBJECT</defaultSubject><defaultContent>$DEFAULT_CONTENT</defaultContent><attachmentsPattern/></hudson.plugins.emailext.ExtendedEmailPublisher>"
+    UnstableTrigger         = "<hudson.plugins.emailext.plugins.trigger.UnstableTrigger>%s</hudson.plugins.emailext.plugins.trigger.UnstableTrigger>"%mail%"%s,%s"%(lqarecipient,aerecipient_list)
+    FailureTrigger          = "<hudson.plugins.emailext.plugins.trigger.FailureTrigger>%s</hudson.plugins.emailext.plugins.trigger.FailureTrigger>"%mail%aerecipient_list
+    StillFailingTrigger     = "<hudson.plugins.emailext.plugins.trigger.StillFailingTrigger>%s</hudson.plugins.emailext.plugins.trigger.StillFailingTrigger>"%mail%"%s,%s"%(lqarecipient,aerecipient_list)
+    SuccessTrigger          = "<hudson.plugins.emailext.plugins.trigger.SuccessTrigger>%s</hudson.plugins.emailext.plugins.trigger.SuccessTrigger>"%mail%(lqarecipient)
+    FixedTrigger            = "<hudson.plugins.emailext.plugins.trigger.FixedTrigger>%s</hudson.plugins.emailext.plugins.trigger.FixedTrigger>"%mail%(lqarecipient)
+    StillUnstableTrigger    = "<hudson.plugins.emailext.plugins.trigger.StillUnstableTrigger>%s</hudson.plugins.emailext.plugins.trigger.StillUnstableTrigger>"%mail%"%s,%s"%(lqarecipient,aerecipient_list)
+    email_notfications      = email_notfications%"%s%s%s"%(SuccessTrigger,UnstableTrigger,FailureTrigger)
+    return email_notfications
+
+def getPredefinedParams(locale,flow):
+    StringParames=[("stageName","","stage2dev463"),("stageDomain","","qa"),("SSH_USER","","ppbuild")]
+    lqa = conf.get("LQA",locale)
+    StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable or Success.",lqa))
+    ae = ",".join([e+"@paypal.com" for e in conf.get("FLOW_OWENER",flow).split(",")])
+    StringParames.append(("FAILED_JOBS_NOTIFICATION","whom will be notified when this job is Unstable,Failure. This can be a email list.",ae))
+    fn = lambda p:"<hudson.model.StringParameterDefinition><name>%s</name><description>%s</description><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition>"%(p[0],p[1],p[2])
+    StringParameterDefinitions = "".join(map(fn,StringParames))
+    predefinedParams = "<hudson.model.ParametersDefinitionProperty><parameterDefinitions>%s</parameterDefinitions></hudson.model.ParametersDefinitionProperty>"%StringParameterDefinitions
+    return predefinedParams
+     
 def config(jobsName):
     assert isinstance(jobsName,list)
 #    permissionStr = "<hudson.security.AuthorizationMatrixProperty><permission>hudson.model.Item.Workspace:kejiang</permission><permission>hudson.model.Item.Workspace:tkahkonen</permission><permission>hudson.model.Item.Workspace:richuang</permission><permission>hudson.model.Item.Workspace:ltruong</permission><permission>hudson.model.Item.Workspace:tkhoo</permission><permission>hudson.model.Item.Workspace:anonymous</permission><permission>hudson.model.Item.Workspace:rugurumurthy</permission><permission>hudson.model.Item.Workspace:jvely</permission><permission>hudson.model.Item.Workspace:rlux</permission><permission>hudson.model.Item.Workspace:biwei</permission><permission>hudson.model.Item.Workspace:belzhang</permission><permission>hudson.model.Item.Workspace:sochoudhary</permission><permission>hudson.model.Item.Workspace:bozhou</permission><permission>hudson.model.Item.Workspace:lolu</permission><permission>hudson.scm.SCM.Tag:kejiang</permission><permission>hudson.scm.SCM.Tag:tkahkonen</permission><permission>hudson.scm.SCM.Tag:richuang</permission><permission>hudson.scm.SCM.Tag:ltruong</permission><permission>hudson.scm.SCM.Tag:tkhoo</permission><permission>hudson.scm.SCM.Tag:rugurumurthy</permission><permission>hudson.scm.SCM.Tag:jvely</permission><permission>hudson.scm.SCM.Tag:rlux</permission><permission>hudson.scm.SCM.Tag:biwei</permission><permission>hudson.scm.SCM.Tag:belzhang</permission><permission>hudson.scm.SCM.Tag:sochoudhary</permission><permission>hudson.scm.SCM.Tag:bozhou</permission><permission>hudson.scm.SCM.Tag:lolu</permission><permission>hudson.model.Item.Delete:kejiang</permission><permission>hudson.model.Item.Delete:tkahkonen</permission><permission>hudson.model.Item.Delete:richuang</permission><permission>hudson.model.Item.Delete:ltruong</permission><permission>hudson.model.Item.Delete:tkhoo</permission><permission>hudson.model.Item.Delete:rugurumurthy</permission><permission>hudson.model.Item.Delete:jvely</permission><permission>hudson.model.Item.Delete:rlux</permission><permission>hudson.model.Item.Delete:biwei</permission><permission>hudson.model.Item.Delete:belzhang</permission><permission>hudson.model.Item.Delete:sochoudhary</permission><permission>hudson.model.Item.Delete:bozhou</permission><permission>hudson.model.Item.Delete:lolu</permission><permission>hudson.model.Item.Configure:kejiang</permission><permission>hudson.model.Item.Configure:tkahkonen</permission><permission>hudson.model.Item.Configure:richuang</permission><permission>hudson.model.Item.Configure:ltruong</permission><permission>hudson.model.Item.Configure:tkhoo</permission><permission>hudson.model.Item.Configure:rugurumurthy</permission><permission>hudson.model.Item.Configure:jvely</permission><permission>hudson.model.Item.Configure:rlux</permission><permission>hudson.model.Item.Configure:biwei</permission><permission>hudson.model.Item.Configure:belzhang</permission><permission>hudson.model.Item.Configure:sochoudhary</permission><permission>hudson.model.Item.Configure:bozhou</permission><permission>hudson.model.Item.Configure:lolu</permission><permission>hudson.model.Item.Build:kejiang</permission><permission>hudson.model.Item.Build:tkahkonen</permission><permission>hudson.model.Item.Build:richuang</permission><permission>hudson.model.Item.Build:ltruong</permission><permission>hudson.model.Item.Build:tkhoo</permission><permission>hudson.model.Item.Build:anonymous</permission><permission>hudson.model.Item.Build:rugurumurthy</permission><permission>hudson.model.Item.Build:jvely</permission><permission>hudson.model.Item.Build:rlux</permission><permission>hudson.model.Item.Build:biwei</permission><permission>hudson.model.Item.Build:belzhang</permission><permission>hudson.model.Item.Build:sochoudhary</permission><permission>hudson.model.Item.Build:bozhou</permission><permission>hudson.model.Item.Build:lolu</permission><permission>hudson.model.Run.Delete:kejiang</permission><permission>hudson.model.Run.Delete:tkahkonen</permission><permission>hudson.model.Run.Delete:richuang</permission><permission>hudson.model.Run.Delete:ltruong</permission><permission>hudson.model.Run.Delete:tkhoo</permission><permission>hudson.model.Run.Delete:rugurumurthy</permission><permission>hudson.model.Run.Delete:jvely</permission><permission>hudson.model.Run.Delete:rlux</permission><permission>hudson.model.Run.Delete:biwei</permission><permission>hudson.model.Run.Delete:belzhang</permission><permission>hudson.model.Run.Delete:sochoudhary</permission><permission>hudson.model.Run.Delete:bozhou</permission><permission>hudson.model.Run.Delete:lolu</permission><permission>hudson.model.Item.Read:kejiang</permission><permission>hudson.model.Item.Read:tkahkonen</permission><permission>hudson.model.Item.Read:richuang</permission><permission>hudson.model.Item.Read:ltruong</permission><permission>hudson.model.Item.Read:tkhoo</permission><permission>hudson.model.Item.Read:rugurumurthy</permission><permission>hudson.model.Item.Read:jvely</permission><permission>hudson.model.Item.Read:rlux</permission><permission>hudson.model.Item.Read:biwei</permission><permission>hudson.model.Item.Read:belzhang</permission><permission>hudson.model.Item.Read:sochoudhary</permission><permission>hudson.model.Item.Read:bozhou</permission><permission>hudson.model.Item.Read:lolu</permission><permission>hudson.model.Item.ExtendedRead:kejiang</permission><permission>hudson.model.Item.ExtendedRead:tkahkonen</permission><permission>hudson.model.Item.ExtendedRead:richuang</permission><permission>hudson.model.Item.ExtendedRead:ltruong</permission><permission>hudson.model.Item.ExtendedRead:tkhoo</permission><permission>hudson.model.Item.ExtendedRead:rugurumurthy</permission><permission>hudson.model.Item.ExtendedRead:jvely</permission><permission>hudson.model.Item.ExtendedRead:rlux</permission><permission>hudson.model.Item.ExtendedRead:biwei</permission><permission>hudson.model.Item.ExtendedRead:belzhang</permission><permission>hudson.model.Item.ExtendedRead:sochoudhary</permission><permission>hudson.model.Item.ExtendedRead:bozhou</permission><permission>hudson.model.Item.ExtendedRead:lolu</permission><permission>hudson.model.Run.Update:kejiang</permission><permission>hudson.model.Run.Update:tkahkonen</permission><permission>hudson.model.Run.Update:richuang</permission><permission>hudson.model.Run.Update:ltruong</permission><permission>hudson.model.Run.Update:tkhoo</permission><permission>hudson.model.Run.Update:rugurumurthy</permission><permission>hudson.model.Run.Update:jvely</permission><permission>hudson.model.Run.Update:rlux</permission><permission>hudson.model.Run.Update:biwei</permission><permission>hudson.model.Run.Update:belzhang</permission><permission>hudson.model.Run.Update:sochoudhary</permission><permission>hudson.model.Run.Update:bozhou</permission><permission>hudson.model.Run.Update:lolu</permission><permission>hudson.model.Item.Cancel:kejiang</permission><permission>hudson.model.Item.Cancel:tkahkonen</permission><permission>hudson.model.Item.Cancel:richuang</permission><permission>hudson.model.Item.Cancel:ltruong</permission><permission>hudson.model.Item.Cancel:tkhoo</permission><permission>hudson.model.Item.Cancel:anonymous</permission><permission>hudson.model.Item.Cancel:rugurumurthy</permission><permission>hudson.model.Item.Cancel:jvely</permission><permission>hudson.model.Item.Cancel:rlux</permission><permission>hudson.model.Item.Cancel:biwei</permission><permission>hudson.model.Item.Cancel:belzhang</permission><permission>hudson.model.Item.Cancel:sochoudhary</permission><permission>hudson.model.Item.Cancel:bozhou</permission><permission>hudson.model.Item.Cancel:lolu</permission></hudson.security.AuthorizationMatrixProperty>"
     permissionStr = getPermissionList()
 #    goalsStr = "clean test -U -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=%s -DJAWS_NIGHTOWL_MAIL_SERVER=nightowllvs01.qa.paypal.com -DsuiteXmlFile=%s %s"
     goalsStr = "clean test -U -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=%s -DsuiteXmlFile=%s %s"
-    email_notfication= """
-    <hudson.plugins.emailext.ExtendedEmailPublisher><recipientList></recipientList><configuredTriggers><hudson.plugins.emailext.plugins.trigger.UnstableTrigger><email><recipientList>%s,${FAILED_JOBS_NOTIFICATION}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
-
-We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
-
-Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
-
-Thanks,
-Automation Team
-DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.UnstableTrigger><hudson.plugins.emailext.plugins.trigger.FailureTrigger><email><recipientList>%s,${FAILED_JOBS_NOTIFICATION}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
-
-We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
-
-Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
-
-Thanks,
-Automation Team
-DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com
-</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.FailureTrigger><hudson.plugins.emailext.plugins.trigger.StillFailingTrigger><email><recipientList>%s,${FAILED_JOBS_NOTIFICATION}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
-
-We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
-
-Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
-
-Thanks,
-Automation Team
-DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.StillFailingTrigger><hudson.plugins.emailext.plugins.trigger.SuccessTrigger><email><recipientList>%s</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
-
-We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
-
-Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
-
-Thanks,
-Automation Team
-DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.SuccessTrigger><hudson.plugins.emailext.plugins.trigger.FixedTrigger><email><recipientList>%s</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
-
-We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
-
-Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
-
-Thanks,
-Automation Team
-DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.FixedTrigger><hudson.plugins.emailext.plugins.trigger.StillUnstableTrigger><email><recipientList>%s,${FAILED_JOBS_NOTIFICATION}</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
-
-We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
-
-Please review the results ${PROJECT_URL}ws/target/surefire-reports/html/report.html
-
-Thanks,
-Automation Team
-DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false</sendToDevelopers><sendToRequester>false</sendToRequester><includeCulprits>false</includeCulprits><sendToRecipientList>true</sendToRecipientList></email></hudson.plugins.emailext.plugins.trigger.StillUnstableTrigger></configuredTriggers><contentType>default</contentType><defaultSubject>$DEFAULT_SUBJECT</defaultSubject><defaultContent>$DEFAULT_CONTENT</defaultContent><attachmentsPattern/></hudson.plugins.emailext.ExtendedEmailPublisher>
-    """
+    
     #Default: stageName, SSH_USER, DEFAULT_EMAIL_PREFIX, stageDomain
 #    predefinedParams = """
 #        <hudson.model.ParametersDefinitionProperty><parameterDefinitions><hudson.model.StringParameterDefinition><name>stageName</name><description/><defaultValue>stage2dev463</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>SSH_USER</name><description/><defaultValue>ppbuild</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>DEFAULT_EMAIL_PREFIX</name><description/><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>stageDomain</name><description/><defaultValue>qa</defaultValue></hudson.model.StringParameterDefinition></parameterDefinitions></hudson.model.ParametersDefinitionProperty>
@@ -179,8 +162,8 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         <hudson.model.ParametersDefinitionProperty><parameterDefinitions><hudson.model.StringParameterDefinition><name>stageName</name><description/><defaultValue>stage2dev463</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>stageDomain</name><description/><defaultValue>qa</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>SSH_USER</name><description/><defaultValue>ppbuild</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>%s_DEFAULT_EMAIL_PREFIX</name><description>Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable,Failure,Still Failing,Success,Fixed or Still Unstable.</description><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition><hudson.model.StringParameterDefinition><name>FAILED_JOBS_NOTIFICATION</name><description>whom will be notified when this job is Unstable,Failure,Still Failing,or Still Unstable. This can be a emails list.</description><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition></parameterDefinitions></hudson.model.ParametersDefinitionProperty>
     """ 
     for jobName in jobsName:
-        if jobName.find("01_")<0:
-            continue
+#        if jobName.find("01_")<0:
+#            continue
 #        if jobName.find(esAR")<0 and jobName.find("itIT")<0 and jobName.find("frCA")<0 and jobName.find("noNO")<0 and jobName.find("svSE")<0:
 #            continue
 #        print jobName
@@ -224,20 +207,16 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
         if emailNoelement_tree is not None:
             publicsher.remove(emailNoelement_tree)
         LQA_NOTIFICATION_EMAIL = "${%s_DEFAULT_EMAIL_PREFIX}@paypal.com"%locale
-        enn = ET.fromstring(email_notfication%(LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL,LQA_NOTIFICATION_EMAIL))
+        AE_NOTIFICATION_EMAIL = "${FAILED_JOBS_NOTIFICATION}"
+        email_notfication = getEmailNotification(LQA_NOTIFICATION_EMAIL,AE_NOTIFICATION_EMAIL)
+        enn = ET.fromstring(email_notfication)
         publicsher.append(enn)
         ##############################################update the predefined parameter##########################
         predefinedParamsNode = element_tree.find('./properties/hudson.model.ParametersDefinitionProperty')
         if predefinedParamsNode is not None:
             preprop.remove(predefinedParamsNode)
-
-#        DEFAULT_EMAIL_PREFIX = 
-        xx_DEFAULT_EMAIL_PREFIX = conf.get("LQA",locale)
-#        LQA_NOTIFICATION_EMAIL = ",".join([e+"@paypal.com" for e in LQA_corp[locale]])
-        FAILED_NOTIFICATION_EMAIL = ",".join([e+"@paypal.com" for e in conf.get("FLOW_OWENER",flow).split(",")])
-        
-#        predefinedParamsNode = ET.fromstring(predefinedParams%(locale,xx_DEFAULT_EMAIL_PREFIX))
-        predefinedParamsNode = ET.fromstring(predefinedParams%(locale,xx_DEFAULT_EMAIL_PREFIX,FAILED_NOTIFICATION_EMAIL))
+        predefinedParams = getPredefinedParams(locale,flow)
+        predefinedParamsNode = ET.fromstring(predefinedParams)
         preprop.append(predefinedParamsNode)
         try:
             job.update_config(ET.tostring(element_tree))
