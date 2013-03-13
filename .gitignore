@@ -5,4 +5,4 @@
 *.swp
 *.log
 *.pyc
-
+jenkinsapi/utils/*.pyc
