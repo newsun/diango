@@ -60,6 +60,8 @@ def joblist(jobsName):
     
 def chain(jobsName,dochain=True):
     assert isinstance(jobsName,list)
+    if isinstance(dochain,str):
+        dochain = eval(dochain)
     jobsName.sort()
     jobsName.reverse()
     chain = None
@@ -69,7 +71,7 @@ def chain(jobsName,dochain=True):
         job = jen[jobName]
         job.modify_chain(chain)
         logger.info("%s => %s"%(jobName,chain))
-        chain = dochain and jobName or chain
+        chain = dochain and jobName or None
 
 def goals(jobsName,newStr=None,oldStr=None,count=-1):
     assert isinstance(jobsName,list)
