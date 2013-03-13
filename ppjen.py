@@ -244,11 +244,6 @@ def launchall(jobsName, file):
     job.invoke(params = params[flowName])
 
 def compare_jobs(d1,d2):
-    ae_flow_url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/AE_Flow/"
-    ae_locale_url = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/"
-    lqa_flow_url = "https://fusion.paypal.com/jenkins/user/tkhoo/my-views/view/Flow%20View/"
-    lqa_locale_url="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
-    
     s1 = eval(d1)
     s2 = eval(d2)
     
@@ -280,58 +275,68 @@ if __name__=='__main__':
     parser = OptionParser(usage=usage,version="%prog 1.0")
     parser.add_option("-u","--username",dest="username",help="user name to login jenkins")
     parser.add_option("-p","--password",dest="password",help="user password to login jenkins")
-#    parser.add_option("-i","--view",dest="view",help="which view you want to operate. available: AE|LQA")
+    parser.add_option("-v","--view",dest="view",help="which view you want to operate. available: AE|LQA")
     parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
     parser.add_option("-c","--dochain",dest="dochain",default = True, help="chain or unchain the jobs under a view")
-    parser.add_option("-o","--oldStr",dest="oldStr",default = None, help="the old string (or a wildword expression) going to replace by new string, optioanl, default None")
-    parser.add_option("-n","--newStr",dest="newStr",default = None, help="the new string going to replace the oldstring, optional, default None")
-    parser.add_option("-w","--flow",dest="flow",help="the flow name which is going to be launched")
-    parser.add_option("-s","--stage",dest="stage",help="the stage for invoking a job")
-    parser.add_option("-e","--email",dest="email",help="the email for invoking a job or default email")
-    parser.add_option("-r","--sshuser",dest="ppuser",help="the ppuser for invoking a job")
-    parser.add_option("-d","--domain",dest="domain",help="the stage domain for invoking a job")
-    parser.add_option("-f","--file",dest="file",help="the configuration file")
+#    parser.add_option("-o","--oldStr",dest="oldStr",default = None, help="the old string (or a wildword expression) going to replace by new string, optioanl, default None")
+#    parser.add_option("-n","--newStr",dest="newStr",default = None, help="the new string going to replace the oldstring, optional, default None")
+#    parser.add_option("-w","--flow",dest="flow",help="the flow name which is going to be launched")
+#    parser.add_option("-s","--stage",dest="stage",help="the stage for invoking a job")
+#    parser.add_option("-e","--email",dest="email",help="the email for invoking a job or default email")
+#    parser.add_option("-r","--sshuser",dest="ppuser",help="the ppuser for invoking a job")
+#    parser.add_option("-d","--domain",dest="domain",help="the stage domain for invoking a job")
+#    parser.add_option("-f","--file",dest="file",help="the configuration file")
     options,args = parser.parse_args()
     
-    if options.file and not options.view:
-        parser.error("if use conf file, you need choose a view type")
-    elif options.file:
-        config.readfp(open(options.file,'rb'))
-        if options.view == "AE":
-            config.getOption("AE View","url")
-        elif options.view == "LQA":
-            config.getOption("LQA View","url")
-        else:
-            raise Exception("Invalid view")
+#    if options.file and not options.view:
+#        parser.error("if use conf file, you need choose a view type")
+#    elif options.file:
+#        config.readfp(open(options.file,'rb'))
+#        if options.view == "AE":
+#            config.getOption("AE View","url")
+#        elif options.view == "LQA":
+#            config.getOption("LQA View","url")
+#        else:
+#            raise Exception("Invalid view")
     if not options.username:
         parser.error("username can't be empty")
-    if not options.url:
-        parser.error("view url can't be empty")
+    if not options.url and not options.view:
+        parser.error("view can't be empty")
     if not options.password:
         parser.error("password can't be empty")
     if not options.action:
         parser.error("action can't be empty")
     if options.action == "launch" and (not options.flow or not options.stage or not options.email):
         parser.error("lauch action needs flow name, stage and email")
-    if options.action == "launchall" and (not options.file):
-        parser.error("lauchall action needs configuration file")
-    if options.action == "update_email" and not options.email:
-        parser.error("update_email must accompany a new default email address prefix")
-
+#    if options.action == "launchall" and (not options.file):
+#        parser.error("lauchall action needs configuration file")
+#    if options.action == "update_email" and not options.email:
+#        parser.error("update_email must accompany a new default email address prefix")
+    
+    ae_flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/AE_Flow/"
+    ae_locale = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/"
+    lqa_flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
+    lqa_locale ="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
+    if options.view:
+        if eval not in ["ae_flow","ae_locale","lqa_flow","lqa_locale"]:
+            parser.error("view can only be one of %s, %s, %s, or %s"%("ae_flow","ae_locale","lqa_flow","lqa_locale"))
+        else:
+            options.url = eval(options.view)
     jen = Jenkins(jen_url,options.username,options.password)
-    if options.action == "launch":
-        modify_view_jobs(options.url,eval(options.action),options.flow,options.stage,options.email)  
-    elif options.action == "launchall":
-        modify_view_jobs(options.url,eval(options.action),options.file)
-    elif options.action == "chain":
+    if options.action == "chain":
         modify_view_jobs(options.url,eval(options.action),options.dochain)
-    elif options.action == "goals":
-        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
-    elif options.action == "update_email":
-        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
-    elif options.action == "compare_jobs":
-        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
+#    elif options.action == "launchall":
+#        modify_view_jobs(options.url,eval(options.action),options.file)
+#    elif options.action == "launch":
+#        modify_view_jobs(options.url,eval(options.action),options.flow,options.stage,options.email)
+#    elif options.action == "goals":
+#        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
+#    elif options.action == "update_email":
+#        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
+#    elif options.action == "compare_jobs":
+#        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
+    
     elif options.action == "config":
         modify_view_jobs(options.url,eval(options.action))
     else:
