@@ -127,7 +127,10 @@ def getPredefinedParams(locale,flow):
     StringParames=[("stageName","","stage2dev463"),("stageDomain","","qa"),("SSH_USER","","ppbuild")]
     lqa = conf.get("LQA",locale)
     StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable or Success.",lqa))
-    ae = ",".join([e+"@paypal.com" for e in conf.get("FLOW_OWENER",flow).split(",")])
+    if locale == "deDE":
+        ae = "rugurumurthy@paypal.com"
+    else:
+        ae = ",".join([e+"@paypal.com" for e in conf.get("FLOW_OWENER",flow).split(",")])
     StringParames.append(("FAILED_JOBS_NOTIFICATION","whom will be notified when this job is Unstable,Failure. This can be a email list.",ae))
     fn = lambda p:"<hudson.model.StringParameterDefinition><name>%s</name><description>%s</description><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition>"%(p[0],p[1],p[2])
     StringParameterDefinitions = "".join(map(fn,StringParames))
