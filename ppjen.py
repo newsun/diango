@@ -103,7 +103,16 @@ def getPermissionList():
     pStr = "<hudson.security.AuthorizationMatrixProperty>%s%s</hudson.security.AuthorizationMatrixProperty>"%(perms,anonymous)
     return pStr
 
-def getEmailNotification(lqarecipient,aerecipient_list):
+def getEmailNotification(locale):
+    lqas = conf.get("LQA",locale).split(",")
+    if len(lqas) == 0:
+        raise Exception("No LQA defined for %s"%locale)
+    elif len(lqas) == 1:
+        lqarecipient = "${%s_DEFAULT_EMAIL_PREFIX}@paypal.com"%locale
+    else:
+        lqarecipient = "${%s_LQA_NOTIFICATION}"%locale
+
+    aerecipient_list = "${FAILED_JOBS_NOTIFICATION}"
     mail = """<email><recipientList>%s</recipientList><subject>$PROJECT_DEFAULT_SUBJECT</subject><body>Hi,
 
 We just finished running ${PROJECT_NAME}, we ran a total ${TEST_COUNTS, var="total"} testcases of which ${TEST_COUNTS, var="fail"} failed and ${TEST_COUNTS, var="skip"} were skipped.
@@ -127,8 +136,19 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
 
 def getPredefinedParams(locale,flow):
     StringParames=[("stageName","","stage2dev463"),("stageDomain","","qa"),("SSH_USER","","ppbuild")]
-    lqa = conf.get("LQA",locale)
-    StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable or Success.",lqa))
+    
+    lqas = conf.get("LQA",locale).split(",")
+    if len(lqas) == 0:
+        raise Exception("No LQA defined for %s"%locale)
+    elif len(lqas) == 1:
+        default_email_prefix = lqas[0]
+        StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable or Success.",default_email_prefix))
+    else:
+        default_email_prefix = lqas[0]
+        StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to",default_email_prefix))
+        lqa_notification = ",".join([e+"@paypal.com" for e in lqas])
+        StringParames.append(("%s_LQA_NOTIFICATION"%locale,"Whom will be notified when this job is Unstable or Success.",lqa_notification))
+
     if locale == "deDE":
         ae = "rugurumurthy@paypal.com"
     else:
@@ -157,8 +177,8 @@ def config(jobsName):
         locale = m.groups()[1]
         flow = m.groups()[2]
         if locale.lower() not in conf.options("LQA"):
-            lqa=conf.get("LQA","default")
-            logger.warning("%s doesn't have LQA assigned"%jobName)
+            conf.set("LQA",locale,conf.get("LQA","default"))
+            logger.warning("%s doesn't have LQA assigned"%locale)
         if flow.lower() not in conf.options("FLOW_OWENER"):
             logger.error("%s is a not supported flow"%jobName)
             continue
@@ -189,9 +209,7 @@ def config(jobsName):
         emailNoelement_tree = element_tree.find("./publishers/hudson.plugins.emailext.ExtendedEmailPublisher")
         if emailNoelement_tree is not None:
             publicsher.remove(emailNoelement_tree)
-        LQA_NOTIFICATION_EMAIL = "${%s_DEFAULT_EMAIL_PREFIX}@paypal.com"%locale
-        AE_NOTIFICATION_EMAIL = "${FAILED_JOBS_NOTIFICATION}"
-        email_notfication = getEmailNotification(LQA_NOTIFICATION_EMAIL,AE_NOTIFICATION_EMAIL)
+        email_notfication = getEmailNotification(locale)
         enn = ET.fromstring(email_notfication)
         publicsher.append(enn)
         ##############################################update the predefined parameter##########################
@@ -201,6 +219,7 @@ def config(jobsName):
         predefinedParams = getPredefinedParams(locale,flow)
         predefinedParamsNode = ET.fromstring(predefinedParams)
         preprop.append(predefinedParamsNode)
+        ############################################## submit ##########################
         try:
             job.update_config(ET.tostring(element_tree))
         except:
@@ -320,8 +339,9 @@ if __name__=='__main__':
     ae_locale = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/"
     lqa_flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/"
     lqa_locale ="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
+    jp = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/APAC/view/Japan/"
     if options.view:
-        if options.view not in ["ae_flow","ae_locale","lqa_flow","lqa_locale"]:
+        if options.view not in ["ae_flow","ae_locale","lqa_flow","lqa_locale","jp"]:
             parser.error("view can only be one of %s, %s, %s, or %s"%("ae_flow","ae_locale","lqa_flow","lqa_locale"))
         else:
             options.url = eval(options.view)
