@@ -309,8 +309,8 @@ if __name__=='__main__':
         parser.error("password can't be empty")
     if not options.action:
         parser.error("action can't be empty")
-    if options.action == "launch" and (not options.flow or not options.stage or not options.email):
-        parser.error("lauch action needs flow name, stage and email")
+#    if options.action == "launch" and (not options.flow or not options.stage or not options.email):
+#        parser.error("lauch action needs flow name, stage and email")
 #    if options.action == "launchall" and (not options.file):
 #        parser.error("lauchall action needs configuration file")
 #    if options.action == "update_email" and not options.email:
@@ -321,10 +321,13 @@ if __name__=='__main__':
     lqa_flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
     lqa_locale ="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
     if options.view:
-        if eval not in ["ae_flow","ae_locale","lqa_flow","lqa_locale"]:
+        if options.view not in ["ae_flow","ae_locale","lqa_flow","lqa_locale"]:
             parser.error("view can only be one of %s, %s, %s, or %s"%("ae_flow","ae_locale","lqa_flow","lqa_locale"))
         else:
             options.url = eval(options.view)
+    actions = ['chain','config']
+    if options.action not in actions:
+        parser.error("action can be one of %s"%str(actions))
     jen = Jenkins(jen_url,options.username,options.password)
     if options.action == "chain":
         modify_view_jobs(options.url,eval(options.action),options.dochain)
