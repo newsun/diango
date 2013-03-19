@@ -72,6 +72,26 @@ def chain(jobsName,dochain=True):
         job.modify_chain(chain)
         logger.info("%s => %s"%(jobName,chain))
         chain = dochain and jobName or None
+def permission(jobsName):
+    assert isinstance(jobsName,list)
+    goalsStr = "clean test -U -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=${DEFAULT_EMAIL_PREFIX} -DJAWS_NIGHTOWL_MAIL_SERVER=nightowllvs01.qa.paypal.com -DsuiteXmlFile=%s -Dpaypal.buildid=%s"
+    jobsName.sort()
+    for jobName in jobsName:
+        job = jen[jobName]
+        config = job.get_config()
+        element_tree = ET.fromstring(config)
+        preprop = element_tree.find('./properties')
+        permissionNode = element_tree.find('./properties/hudson.security.AuthorizationMatrixProperty')
+        preprop.remove(permissionNode)
+        permissionStr = getPermissionList()
+        permissionNode = ET.fromstring(permissionStr)
+        preprop.append(permissionNode)
+        try:
+            job.update_config(ET.tostring(element_tree))
+        except:
+            logger.error("Failed to update permission of job %s"%jobName)
+        else:
+            logger.info("Updated permission of job %s"%jobName)
 
 def goals(jobsName,newStr=None,oldStr=None,count=-1):
     assert isinstance(jobsName,list)
@@ -104,7 +124,7 @@ def getPermissionList():
     return pStr
 
 def getEmailNotification(locale):
-    lqas = conf.get("LQA",locale).split(",")
+    lqas = getLQAEmailList(locale)
     if len(lqas) == 0:
         raise Exception("No LQA defined for %s"%locale)
     elif len(lqas) == 1:
@@ -134,25 +154,56 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
     email_notfications      = email_notfications%"%s%s%s"%(SuccessTrigger,UnstableTrigger,FailureTrigger)
     return email_notfications
 
+def getLQAEmailList(locale):
+    lqas = []
+    lqas_ = conf.get("LQA",locale).split(",")
+    for l in lqas_:
+        if l.endswith("@ebay.com"):
+            None
+        elif l.endswith("@paypal.com"):
+            None
+        else:
+            l = l+"@paypal.com"
+        lqas.append(l)
+    return lqas
+
+def getDefaultEmailPrefix(email):
+    pos = email.find("@")
+    if pos <0:
+        return email
+    else:
+        return email[:pos]
+    
+def getAEEmailList(flow):
+    aes = []
+    aes_ = conf.get("FLOW_OWENER",flow).split(",")
+    for l in aes_:
+        if l.endswith("@ebay.com"):
+            None
+        elif l.endswith("@paypal.com"):
+            None
+        else:
+            l = l+"@paypal.com"
+        aes.append(l)
+    return aes
+
 def getPredefinedParams(locale,flow):
     StringParames=[("stageName","","stage2dev463"),("stageDomain","","qa"),("SSH_USER","","ppbuild")]
-    
-    lqas = conf.get("LQA",locale).split(",")
+    lqas = getLQAEmailList(locale)
+    default_email_prefix = getDefaultEmailPrefix(lqas[0])
     if len(lqas) == 0:
         raise Exception("No LQA defined for %s"%locale)
     elif len(lqas) == 1:
-        default_email_prefix = lqas[0]
         StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable or Success.",default_email_prefix))
     else:
-        default_email_prefix = lqas[0]
         StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to",default_email_prefix))
-        lqa_notification = ",".join([e+"@paypal.com" for e in lqas])
+        lqa_notification = ",".join(lqas)
         StringParames.append(("%s_LQA_NOTIFICATION"%locale,"Whom will be notified when this job is Unstable or Success.",lqa_notification))
 
     if locale == "deDE":
         ae = "rugurumurthy@paypal.com"
     else:
-        ae = ",".join([e+"@paypal.com" for e in conf.get("FLOW_OWENER",flow).split(",")])
+        ae = ",".join(getAEEmailList(flow))
     StringParames.append(("FAILED_JOBS_NOTIFICATION","whom will be notified when this job is Unstable,Failure. This can be a email list.",ae))
     fn = lambda p:"<hudson.model.StringParameterDefinition><name>%s</name><description>%s</description><defaultValue>%s</defaultValue></hudson.model.StringParameterDefinition>"%(p[0],p[1],p[2])
     StringParameterDefinitions = "".join(map(fn,StringParames))
@@ -345,7 +396,7 @@ if __name__=='__main__':
             parser.error("view can only be one of %s, %s, %s, or %s"%("ae_flow","ae_locale","lqa_flow","lqa_locale"))
         else:
             options.url = eval(options.view)
-    actions = ['chain','config']
+    actions = ['chain','config','permission']
     if options.action not in actions:
         parser.error("action can be one of %s"%str(actions))
     jen = Jenkins(jen_url,options.username,options.password)
@@ -363,6 +414,8 @@ if __name__=='__main__':
 #        modify_view_jobs(options.url,eval(options.action),options.newStr,options.oldStr)
     
     elif options.action == "config":
+        modify_view_jobs(options.url,eval(options.action))
+    elif options.action == "permission":
         modify_view_jobs(options.url,eval(options.action))
     else:
         raise Exception("invalid action")
