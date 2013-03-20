@@ -128,7 +128,9 @@ def getEmailNotification(locale):
     if len(lqas) == 0:
         raise Exception("No LQA defined for %s"%locale)
     elif len(lqas) == 1:
-        lqarecipient = "${%s_DEFAULT_EMAIL_PREFIX}@paypal.com"%locale
+        pos = lqas[0].find("@")
+        emailDomain = lqas[0][pos:]
+        lqarecipient = "${%s_DEFAULT_EMAIL_PREFIX}%s"%(locale,emailDomain)
     else:
         lqarecipient = "${%s_LQA_NOTIFICATION}"%locale
 
