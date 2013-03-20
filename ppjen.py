@@ -127,10 +127,10 @@ def getEmailNotification(locale):
     lqas = getLQAEmailList(locale)
     if len(lqas) == 0:
         raise Exception("No LQA defined for %s"%locale)
-    elif len(lqas) == 1:
-        pos = lqas[0].find("@")
-        emailDomain = lqas[0][pos:]
-        lqarecipient = "${%s_DEFAULT_EMAIL_PREFIX}%s"%(locale,emailDomain)
+#    elif len(lqas) == 1:
+#        pos = lqas[0].find("@")
+#        emailDomain = lqas[0][pos:]
+#        lqarecipient = "${%s_DEFAULT_EMAIL_PREFIX}%s"%(locale,emailDomain)
     else:
         lqarecipient = "${%s_LQA_NOTIFICATION}"%locale
 
@@ -195,8 +195,8 @@ def getPredefinedParams(locale,flow):
     default_email_prefix = getDefaultEmailPrefix(lqas[0])
     if len(lqas) == 0:
         raise Exception("No LQA defined for %s"%locale)
-    elif len(lqas) == 1:
-        StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable or Success.",default_email_prefix))
+#    elif len(lqas) == 1:
+#        StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to and also will be notified when this job is Unstable or Success.",default_email_prefix))
     else:
         StringParames.append(("%s_DEFAULT_EMAIL_PREFIX"%locale,"Destination email prefix where the test case emails will be sent to",default_email_prefix))
         lqa_notification = ",".join(lqas)
