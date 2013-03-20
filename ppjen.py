@@ -416,6 +416,30 @@ if __name__=='__main__':
     elif options.action == "config":
         modify_view_jobs(options.url,eval(options.action))
     elif options.action == "permission":
+#         leftjobs = ["L10n_Step10_StageValidation_stage2dev473",
+#"L10n_Step10_StageValidation_stage2dev470",
+#"L10n_Step10_StageValidation_stage2dev474",
+#"L10n_Step10_StageValidation_stage2dev475",
+#"L10n_Step3_Deployment_Stage2p1444",
+#"L10n_Step10_StageValidation_stage2p1446",
+#"L10n_Step6_Restart_CustomerProfileSpartaWeb_stage2p1443",
+#"L10n_Step8_Restart_addGlobalization_stage2p1443",
+#"Set_CAPTCHA_CDB_Stage2p1443",
+#"StageValidation_stage2dev461",
+#"StageValidation_stage2dev463",
+#"L10n_Step10_StageValidation_stage2dev462",
+#"L10n_Step10_StageValidation_stage2dev465",
+#"L10n_Step10_StageValidation_stage2dev464",
+#"StageValidation_stage2dev466",
+#"L10n_Step10_StageValidation_stage2dev469",
+#"L10n_Step3_Deployment_Stage2p1494",
+#"L10n_Step4_Restart_invoiceserv_stage2p1494",
+#"L10n_Step5_Restart_ResolutionCenter_stage2p1494",
+#"L10n_Step6_Restart_CustomerProfileSpartaWeb_stage2p1494",
+#"L10n_Step7_Restart_Email_stage2p1494",
+#"L10n_Step8_addGlobalization_stage2p1494",
+#"Set_CAPTCHA_CDB_Stage2p1494"]
+#         permission(leftjobs)
         modify_view_jobs(options.url,eval(options.action))
     else:
         raise Exception("invalid action")
