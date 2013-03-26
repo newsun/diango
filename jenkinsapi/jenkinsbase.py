@@ -1,4 +1,4 @@
-import urllib2
+import urllib2,urllib
 import logging
 import pprint
 from jenkinsapi import config
@@ -79,7 +79,8 @@ class JenkinsBase(object):
     def post_data(self, url, content):
         try:
             urlopen = self.get_jenkins_obj().get_opener()
-            result = urlopen(url, data=content).read().strip()
+            data = urllib.urlencode(content)
+            result = urlopen(url, data=data).read().strip()
         except urllib2.HTTPError, e:
             log.warn("Error post data %s" % url)
             log.exception(e)

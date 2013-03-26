@@ -161,10 +161,12 @@ class View(JenkinsBase):
                                'mode': 'copy',
                                'from': jobname,'Submit':'OK'}
 #        json["json"] = json
+        if not self.baseurl.endswith("/"):
+            self.baseurl = self.baseurl+"/"
         copy_job_url = urlparse.urljoin(self.baseurl, "createItem" )
         self.post_data(copy_job_url, json)
-        newjk = self._clone()
-        return newjk.get_job(newjobname)
+#        newjk = self._clone()
+#        return self.get_job(newjobname)
 
     def delete_job(self, jobname):
         """

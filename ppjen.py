@@ -42,7 +42,7 @@ def copyview(srcviewurl, dstViewurl,doAdd=False,suffix="_Debug"):
         else:
             newjobname = jobname + suffix
             if not dstview.has_job(newjobname):
-                job = dstview.copy_job(jobname,newjobname)
+                dstview.copy_job(jobname,newjobname)
                 logger.info("job %s is copied to new view as %s"%(jobname,newjobname))
             
 def modify_view_jobs(url,fn,*args, **kwargs):
@@ -353,13 +353,14 @@ if __name__=='__main__':
     parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
     parser.add_option("-c","--dochain",dest="dochain",default = True, help="chain or unchain the jobs under a view")
+    parser.add_option("-y","--docopy",dest="docopy",default = False, help="do copy when copy view")
 #    parser.add_option("-o","--oldStr",dest="oldStr",default = None, help="the old string (or a wildword expression) going to replace by new string, optioanl, default None")
 #    parser.add_option("-n","--newStr",dest="newStr",default = None, help="the new string going to replace the oldstring, optional, default None")
 #    parser.add_option("-w","--flow",dest="flow",help="the flow name which is going to be launched")
 #    parser.add_option("-s","--stage",dest="stage",help="the stage for invoking a job")
 #    parser.add_option("-e","--email",dest="email",help="the email for invoking a job or default email")
 #    parser.add_option("-r","--sshuser",dest="ppuser",help="the ppuser for invoking a job")
-#    parser.add_option("-d","--domain",dest="domain",help="the stage domain for invoking a job")
+    parser.add_option("-d","--dest",dest="dstview",help="the destination view for copyview")
 #    parser.add_option("-f","--file",dest="file",help="the configuration file")
     options,args = parser.parse_args()
     
@@ -393,14 +394,22 @@ if __name__=='__main__':
     lqa_flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/"
     lqa_locale ="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
     jp = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/APAC/view/Japan/"
+    quickview = ["ae_flow","ae_locale","lqa_flow","lqa_locale","jp"]
     if options.view:
-        if options.view not in ["ae_flow","ae_locale","lqa_flow","lqa_locale","jp"]:
+        if options.view not in quickview :
             parser.error("view can only be one of %s, %s, %s, or %s"%("ae_flow","ae_locale","lqa_flow","lqa_locale"))
         else:
             options.url = eval(options.view)
-    actions = ['chain','config','permission']
+    actions = ['chain','config','permission','copyview']
     if options.action not in actions:
         parser.error("action can be one of %s"%str(actions))
+    elif options.action == "copyview":
+        if not options.dstview:
+            parser.error("copyview action must has a destinationview")
+        elif options.dstview in  quickview:
+            options.dstview = eval(options.dstview)
+    else:
+        None
     jen = Jenkins(jen_url,options.username,options.password)
     if options.action == "chain":
         modify_view_jobs(options.url,eval(options.action),options.dochain)
@@ -418,30 +427,8 @@ if __name__=='__main__':
     elif options.action == "config":
         modify_view_jobs(options.url,eval(options.action))
     elif options.action == "permission":
-#         leftjobs = ["L10n_Step10_StageValidation_stage2dev473",
-#"L10n_Step10_StageValidation_stage2dev470",
-#"L10n_Step10_StageValidation_stage2dev474",
-#"L10n_Step10_StageValidation_stage2dev475",
-#"L10n_Step3_Deployment_Stage2p1444",
-#"L10n_Step10_StageValidation_stage2p1446",
-#"L10n_Step6_Restart_CustomerProfileSpartaWeb_stage2p1443",
-#"L10n_Step8_Restart_addGlobalization_stage2p1443",
-#"Set_CAPTCHA_CDB_Stage2p1443",
-#"StageValidation_stage2dev461",
-#"StageValidation_stage2dev463",
-#"L10n_Step10_StageValidation_stage2dev462",
-#"L10n_Step10_StageValidation_stage2dev465",
-#"L10n_Step10_StageValidation_stage2dev464",
-#"StageValidation_stage2dev466",
-#"L10n_Step10_StageValidation_stage2dev469",
-#"L10n_Step3_Deployment_Stage2p1494",
-#"L10n_Step4_Restart_invoiceserv_stage2p1494",
-#"L10n_Step5_Restart_ResolutionCenter_stage2p1494",
-#"L10n_Step6_Restart_CustomerProfileSpartaWeb_stage2p1494",
-#"L10n_Step7_Restart_Email_stage2p1494",
-#"L10n_Step8_addGlobalization_stage2p1494",
-#"Set_CAPTCHA_CDB_Stage2p1494"]
-#         permission(leftjobs)
         modify_view_jobs(options.url,eval(options.action))
+    elif options.action == "copyview":
+        copyview(options.url,options.dstview,options.docopy)
     else:
         raise Exception("invalid action")
