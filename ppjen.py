@@ -217,8 +217,8 @@ def config(jobsName):
     assert isinstance(jobsName,list)
     
     for jobName in jobsName:
-        if jobName.find("01_")<0:
-            continue
+#        if jobName.find("01_")<0:
+#            continue
 #        if jobName.find(esAR")<0 and jobName.find("itIT")<0 and jobName.find("frCA")<0 and jobName.find("noNO")<0 and jobName.find("svSE")<0:
 #            continue
 #        print jobName
