@@ -285,7 +285,6 @@ def config(jobsName):
             job.update_config(ET.tostring(element_tree))
         except Exception,e:
             logger.error("Failed to configure %s"%jobName)
-            logger.info(e)
         else:
             logger.info("Updated %s"%jobName)
         
