@@ -1,6 +1,6 @@
 import urllib2
 import base64
-import kerberos as krb
+#import kerberos as krb
 from urlparse import urlparse
 
 import logging
