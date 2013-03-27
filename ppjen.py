@@ -1,6 +1,7 @@
 import sys,os
 import random
 from urllib import *
+import urlparse
 import logging
 from jenkinsapi.jenkins import Jenkins
 from optparse import OptionParser
@@ -214,11 +215,10 @@ def getPredefinedParams(locale,flow):
      
 def config(jobsName):
     assert isinstance(jobsName,list)
-    goalsStr = "clean test -U -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=%s -DsuiteXmlFile=%s %s"
     
     for jobName in jobsName:
-#        if jobName.find("01_")<0:
-#            continue
+        if jobName.find("01_")<0:
+            continue
 #        if jobName.find(esAR")<0 and jobName.find("itIT")<0 and jobName.find("frCA")<0 and jobName.find("noNO")<0 and jobName.find("svSE")<0:
 #            continue
 #        print jobName
@@ -238,6 +238,11 @@ def config(jobsName):
         job = jen[jobName]
         config = job.get_config()
         element_tree = ET.fromstring(config)
+        #############################################description change#############################################
+        report_url = urlparse.urljoin(jen_url,"job/%s/ws/target/surefire-reports/html/report.html"%jobName)
+        desc="<br><br><a style=\"color:blue\" href=\"%s\"><font size =4>Bluefin HTML Report</font></a>"%report_url
+        descNode = element_tree.find('./description')
+        descNode.text = desc
         #############################################permission change#############################################
         preprop = element_tree.find('./properties')
         permissionNode = element_tree.find('./properties/hudson.security.AuthorizationMatrixProperty')
@@ -256,7 +261,9 @@ def config(jobsName):
         random_buildid = "-Dpaypal.buildid=%s"%random.randint(5000000,5999999)
         current_buildid = m.groups()[1]
         buildid =  current_buildid and current_buildid or random_buildid
-        goals.text = goalsStr%("${%s_DEFAULT_EMAIL_PREFIX}"%locale,testsuite,buildid)
+        goalsStr = "clean test -U -DstageName=${stageName} -DBLUEFIN_SELENIUM_HOST=10.57.88.98 -DBLUEFIN_HOSTNAME=${stageName}.${stageDomain}.paypal.com -DBLUEFIN_SSH_USER=${SSH_USER} -DJAWS_DEFAULT_EMAIL_PREFIX=%s -DsuiteXmlFile=%s %s"
+        goalsStr = goalsStr%("${%s_DEFAULT_EMAIL_PREFIX}"%locale,testsuite,buildid)
+        goals.text = goalsStr
         #############################################change email notification################################
         publicsher = element_tree.find('./publishers')
         emailNoelement_tree = element_tree.find("./publishers/hudson.plugins.emailext.ExtendedEmailPublisher")
@@ -274,9 +281,12 @@ def config(jobsName):
         preprop.append(predefinedParamsNode)
         ############################################## submit ##########################
         try:
+            configStr = ET.tostring(element_tree)
+            print configStr
             job.update_config(ET.tostring(element_tree))
-        except:
+        except Exception,e:
             logger.error("Failed to configure %s"%jobName)
+            logger.info(e)
         else:
             logger.info("Updated %s"%jobName)
         
