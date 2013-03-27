@@ -282,7 +282,6 @@ def config(jobsName):
         ############################################## submit ##########################
         try:
             configStr = ET.tostring(element_tree)
-            print configStr
             job.update_config(ET.tostring(element_tree))
         except Exception,e:
             logger.error("Failed to configure %s"%jobName)
