@@ -401,7 +401,8 @@ if __name__=='__main__':
     ae_locale = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/"
     lqa_flow = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Flow_Testing/"
     lqa_locale ="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
-    jp = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/APAC/view/Japan/"
+    lqa_jp = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/APAC/view/Japan/"
+    ae_jp = "https://fusion.qa.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/APAC/view/Japan/"
     quickview = ["ae_flow","ae_locale","lqa_flow","lqa_locale","jp"]
     if options.view:
         if options.view not in quickview :
