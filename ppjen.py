@@ -403,7 +403,7 @@ if __name__=='__main__':
     lqa_locale ="https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/"
     lqa_jp = "https://fusion.paypal.com/jenkins/view/InternationalQA_View/view/LQA_Regression_Testing/view/APAC/view/Japan/"
     ae_jp = "https://fusion.qa.paypal.com/jenkins/view/InternationalQA_View/view/AE_LQA_Regression_Testing/view/APAC/view/Japan/"
-    quickview = ["ae_flow","ae_locale","lqa_flow","lqa_locale","jp"]
+    quickview = ["ae_flow","ae_locale","lqa_flow","lqa_locale","ae_jp","lqa_jp"]
     if options.view:
         if options.view not in quickview :
             parser.error("view can only be one of %s, %s, %s, or %s"%("ae_flow","ae_locale","lqa_flow","lqa_locale"))
