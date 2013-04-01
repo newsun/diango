@@ -59,14 +59,30 @@ def joblist(jobsName):
     assert isinstance(jobsName,list)
     jobs.extend(jobsName)
     
-def chain(jobsName,dochain=True):
-    assert isinstance(jobsName,list)
+def chain(jobNameList,dochain=True):
+    assert isinstance(jobNameList,list)
     if isinstance(dochain,str):
         dochain = eval(dochain)
-    jobsName.sort()
-    jobsName.reverse()
+    jobNameList.sort()
+    jobNameList.reverse()
+    ##################arrange discope locales##############
+    temp = []
+    temp2 = []
+    lqas = conf.options("LQA")
+    for jobName in jobNameList:
+        m = re.search("(\d+_([^_]{4})_([^_]+)(_Part\d+)?)(_[D|d]ebug)?",jobName)
+        if not m or len(m.groups())<3:
+            logger.error("%s is not a valid job name"%jobName)
+            return
+        locale = m.groups()[1]
+        if locale.lower() not in lqas:
+            temp.append(jobName)
+        else:
+            temp2.append(jobName)
+    temp.extend(temp2)
+    ######################################################
     chain = None
-    for jobName in jobsName:
+    for jobName in temp:
 #        if jobName.find("_jaJP_")>0:
 #            conrugurumurthytinue
         job = jen[jobName]
@@ -159,6 +175,11 @@ DL-PayPal-LQA-Automation-Core-Symbio@corp.ebay.com</body><sendToDevelopers>false
 
 def getLQAEmailList(locale):
     lqas = []
+    if locale.lower() not in conf.options("LQA"):
+        if "default" not in conf.options("LQA"):
+            raise Exception("default is not defined for LQA")
+        return lqas
+
     lqas_ = conf.get("LQA",locale).split(",")
     for l in lqas_:
         if l.endswith("@ebay.com"):
@@ -179,6 +200,11 @@ def getDefaultEmailPrefix(email):
     
 def getAEEmailList(flow):
     aes = []
+    if flow.lower() not in conf.options("FLOW_OWENER"):
+        if "default" not in conf.options("FLOW_OWENER"):
+            raise Exception("default is not defined for FLOW_OWENER")
+        return aes
+    
     aes_ = conf.get("FLOW_OWENER",flow).split(",")
     for l in aes_:
         if l.endswith("@ebay.com"):
