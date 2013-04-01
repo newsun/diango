@@ -64,8 +64,8 @@ def chain(jobNameList,dochain=True):
     if isinstance(dochain,str):
         dochain = eval(dochain)
     jobNameList.sort()
-    for jn in jobNameList:
-        print jn
+#    for jn in jobNameList:
+#        print jn
     jobNameList.reverse()
     ##################arrange discope locales##############
     temp = []
