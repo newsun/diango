@@ -285,6 +285,8 @@ def config(jobsName):
             logger.error("Can't extract suite file in job %s"%jobName)
             continue
         testsuite = m.groups()[0]
+        if locale == "deDE" and testsuite.find("LqaRegressionTesting")<0:
+            testsuite = testsuite.replace("configfiles/", "configfiles/LqaRegressionTesting/germany/")
         #        buildid = ""
         random_buildid = "-Dpaypal.buildid=%s"%random.randint(5000000,5999999)
         current_buildid = m.groups()[1]
@@ -311,10 +313,11 @@ def config(jobsName):
         try:
             configStr = ET.tostring(element_tree)
             job.update_config(ET.tostring(element_tree))
-        except Exception,e:
+        except HTTPError,e:
             logger.error("Failed to configure %s"%jobName)
         else:
-            logger.info("Updated %s"%jobName)
+#            logger.info("Updated %s"%jobName)
+            None
         
 def defaultparameters(jobsName,params={}):
     assert isinstance(jobsName,list)
