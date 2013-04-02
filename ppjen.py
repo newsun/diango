@@ -9,7 +9,7 @@ import re
 import ConfigParser
 import xml.etree.ElementTree as ET
 ###############################################
-########### ppjen Configuration #############
+########### ppjen Configuration ###############
 ###############################################
 conf = ConfigParser.ConfigParser()
 conf.read("ppjen.ini")
