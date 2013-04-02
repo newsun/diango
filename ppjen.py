@@ -316,7 +316,7 @@ def config(jobsName):
         except HTTPError,e:
             logger.error("Failed to configure %s"%jobName)
         else:
-#            logger.info("Updated %s"%jobName)
+            logger.info("Updated %s"%jobName)
             None
         
 def defaultparameters(jobsName,params={}):
