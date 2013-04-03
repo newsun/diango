@@ -3,6 +3,7 @@ import random
 from urllib import *
 import urlparse
 import logging
+from logging.handlers import RotatingFileHandler
 from jenkinsapi.jenkins import Jenkins
 from optparse import OptionParser
 import re
@@ -16,17 +17,21 @@ conf.read("ppjen.ini")
 ###############################################
 ########### Logging Configuration #############
 ###############################################
-logging.basicConfig( level= logging.INFO,\
-                 format= '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',\
-                 datefmt= '%a, %d %b %Y %H:%M:%S',\
-                 filename= 'ppjen_%s.log'%os.getpid(),\
-                 filemode= 'w')
+LOGFILE = "ppjen.log"
+MAXLOGSIZE = 10*1024*1024 #Bytes
+BACKUPCOUNT = 4
+FORMAT = "%(asctime)s %(levelname)-8s[%(filename)s:%(lineno)d(%(funcName)s)] %(message)s"
+LOGLVL = logging.DEBUG
+fhandler = RotatingFileHandler(LOGFILE,mode='a',maxBytes=MAXLOGSIZE,backupCount=BACKUPCOUNT)
+formatter = logging.Formatter(FORMAT)
+fhandler.setFormatter(formatter)
 
 console = logging.StreamHandler()
 console.setLevel(logging.DEBUG)
 console.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
 logger=logging.getLogger()
 logger.addHandler(console)
+logger.addHandler(fhandler)
 ###############################################
 jen_url = "https://fusion.paypal.com/jenkins/"
 jen = None
@@ -59,32 +64,36 @@ def joblist(jobsName):
     assert isinstance(jobsName,list)
     jobs.extend(jobsName)
     
-def chain(jobNameList,dochain=True,chainUnstalbeJobsOnly = False):
+def chain(jobNameList,dochain=True,doSkip = True,chainUnstalbeJobsOnly = False):
     assert isinstance(jobNameList,list)
     if isinstance(dochain,str):
         dochain = eval(dochain)
+    if isinstance(doSkip,str):
+        doSkip = eval(doSkip)
     jobNameList.sort()
 #    for jn in jobNameList:
 #        print jn
     jobNameList.reverse()
     ##################arrange discope locales##############
-    temp = []
-    temp2 = []
-    lqas = conf.options("LQA")
-    for jobName in jobNameList:
-        m = re.search("(\d+_([^_]{4})_([^_]+)(_Part\d+)?)(_[D|d]ebug)?",jobName)
-        if not m or len(m.groups())<3:
-            logger.error("%s is not a valid job name"%jobName)
-            return
-        locale = m.groups()[1]
-        if locale.lower() not in lqas:
-            temp.append(jobName)
-        else:
-            temp2.append(jobName)
-    temp.extend(temp2)
+    if doSkip:
+        temp = []
+        temp2 = []
+        lqas = conf.options("LQA")
+        for jobName in jobNameList:
+            m = re.search("(\d+_([^_]{4})_([^_]+)(_Part\d+)?)(_[D|d]ebug)?",jobName)
+            if not m or len(m.groups())<3:
+                logger.error("%s is not a valid job name"%jobName)
+                return
+            locale = m.groups()[1]
+            if locale.lower() not in lqas:
+                temp.append(jobName)
+            else:
+                temp2.append(jobName)
+        temp.extend(temp2)
+        jobNameList = temp
     ######################################################
     chain = None
-    for jobName in temp:
+    for jobName in jobNameList:
 #        if jobName.find("_jaJP_")>0:
 #            conrugurumurthytinue
         job = jen[jobName]
@@ -397,6 +406,7 @@ if __name__=='__main__':
     parser.add_option("-l","--url",dest="url",help="the view's url under which the jobs you want to update")
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
     parser.add_option("-c","--dochain",dest="dochain",default = True, help="chain or unchain the jobs under a view")
+    parser.add_option("-k","--doskip",dest="doskip",default = True, help="put the skipped locale in the last of chain")
     parser.add_option("-y","--docopy",dest="docopy",default = False, help="do copy when copy view")
 #    parser.add_option("-o","--oldStr",dest="oldStr",default = None, help="the old string (or a wildword expression) going to replace by new string, optioanl, default None")
 #    parser.add_option("-n","--newStr",dest="newStr",default = None, help="the new string going to replace the oldstring, optional, default None")
@@ -457,7 +467,7 @@ if __name__=='__main__':
         None
     jen = Jenkins(jen_url,options.username,options.password)
     if options.action == "chain":
-        modify_view_jobs(options.url,eval(options.action),options.dochain)
+        modify_view_jobs(options.url,eval(options.action),options.dochain,options.doskip)
 #    elif options.action == "launchall":
 #        modify_view_jobs(options.url,eval(options.action),options.file)
 #    elif options.action == "launch":
