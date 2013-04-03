@@ -103,7 +103,7 @@ def chain(jobNameList,dochain=True,doSkip = True,chainUnstalbeJobsOnly = False):
         job = jen[jobName]
         
         if dochain and chainUnstalbeJobsOnly:
-            if job.get_color()== "blue":
+            if job.get_color().find("blue")>=0:
                 continue
         job.modify_chain(chain)
         logger.info("%s => %s"%(jobName,chain))
