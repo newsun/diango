@@ -50,7 +50,10 @@ class Job(JenkinsBase):
         return self._data
     def id( self ):
         return self.data()["name"]
-
+    
+    def get_color(self):
+        return self.data()["color"]
+    
     def __str__(self):
         return self.data()["name"]
 
