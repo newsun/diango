@@ -70,6 +70,8 @@ def chain(jobNameList,dochain=True,doSkip = True,chainUnstalbeJobsOnly = False):
         dochain = eval(dochain)
     if isinstance(doSkip,str):
         doSkip = eval(doSkip)
+    if isinstance(chainUnstalbeJobsOnly,str):
+       chainUnstalbeJobsOnly = eval(chainUnstalbeJobsOnly)
     jobNameList.sort()
 #    for jn in jobNameList:
 #        print jn
@@ -98,10 +100,9 @@ def chain(jobNameList,dochain=True,doSkip = True,chainUnstalbeJobsOnly = False):
 #            conrugurumurthytinue
         job = jen[jobName]
         
-        if chainUnstalbeJobsOnly:
-            if job.get_color()== "":
+        if dochain and chainUnstalbeJobsOnly:
+            if job.get_color()== "blue":
                 continue
-            
         job.modify_chain(chain)
         logger.info("%s => %s"%(jobName,chain))
         chain = dochain and jobName or None
@@ -407,13 +408,9 @@ if __name__=='__main__':
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
     parser.add_option("-c","--dochain",dest="dochain",default = True, help="chain or unchain the jobs under a view")
     parser.add_option("-k","--doskip",dest="doskip",default = True, help="put the skipped locale in the last of chain")
+    parser.add_option("-s","--chainUnstalbeJobsOnly",dest="chainUnstalbeJobsOnly",default = False, help="chain the failed jobs only")
+    
     parser.add_option("-y","--docopy",dest="docopy",default = False, help="do copy when copy view")
-#    parser.add_option("-o","--oldStr",dest="oldStr",default = None, help="the old string (or a wildword expression) going to replace by new string, optioanl, default None")
-#    parser.add_option("-n","--newStr",dest="newStr",default = None, help="the new string going to replace the oldstring, optional, default None")
-#    parser.add_option("-w","--flow",dest="flow",help="the flow name which is going to be launched")
-#    parser.add_option("-s","--stage",dest="stage",help="the stage for invoking a job")
-#    parser.add_option("-e","--email",dest="email",help="the email for invoking a job or default email")
-#    parser.add_option("-r","--sshuser",dest="ppuser",help="the ppuser for invoking a job")
     parser.add_option("-d","--dest",dest="dstview",help="the destination view for copyview")
 #    parser.add_option("-f","--file",dest="file",help="the configuration file")
     options,args = parser.parse_args()
@@ -467,7 +464,7 @@ if __name__=='__main__':
         None
     jen = Jenkins(jen_url,options.username,options.password)
     if options.action == "chain":
-        modify_view_jobs(options.url,eval(options.action),options.dochain,options.doskip)
+        modify_view_jobs(options.url,eval(options.action),options.dochain,options.doskip,options.chainUnstalbeJobsOnly)
 #    elif options.action == "launchall":
 #        modify_view_jobs(options.url,eval(options.action),options.file)
 #    elif options.action == "launch":

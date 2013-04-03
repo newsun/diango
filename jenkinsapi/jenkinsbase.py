@@ -30,6 +30,7 @@ class JenkinsBase(object):
         self.baseurl = baseurl
         self.formauth = formauth
         self.krbauth = krbauth
+        self._data = None
         if poll and not self.formauth:
             try:
                 self.poll()
