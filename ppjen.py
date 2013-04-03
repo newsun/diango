@@ -59,7 +59,7 @@ def joblist(jobsName):
     assert isinstance(jobsName,list)
     jobs.extend(jobsName)
     
-def chain(jobNameList,dochain=True):
+def chain(jobNameList,dochain=True,chainUnstalbeJobsOnly = False):
     assert isinstance(jobNameList,list)
     if isinstance(dochain,str):
         dochain = eval(dochain)
@@ -88,6 +88,11 @@ def chain(jobNameList,dochain=True):
 #        if jobName.find("_jaJP_")>0:
 #            conrugurumurthytinue
         job = jen[jobName]
+        
+        if chainUnstalbeJobsOnly:
+            if job.get_color()== "":
+                continue
+            
         job.modify_chain(chain)
         logger.info("%s => %s"%(jobName,chain))
         chain = dochain and jobName or None
