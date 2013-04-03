@@ -21,15 +21,17 @@ LOGFILE = "ppjen.log"
 MAXLOGSIZE = 10*1024*1024 #Bytes
 BACKUPCOUNT = 4
 FORMAT = "%(asctime)s %(levelname)-8s[%(filename)s:%(lineno)d(%(funcName)s)] %(message)s"
-LOGLVL = logging.DEBUG
+LOGLVL = logging.INFO
 fhandler = RotatingFileHandler(LOGFILE,mode='a',maxBytes=MAXLOGSIZE,backupCount=BACKUPCOUNT)
 formatter = logging.Formatter(FORMAT)
 fhandler.setFormatter(formatter)
+fhandler.setLevel(LOGLVL)
 
 console = logging.StreamHandler()
-console.setLevel(logging.DEBUG)
+console.setLevel(LOGLVL)
 console.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
 logger=logging.getLogger()
+logger.setLevel(LOGLVL)
 logger.addHandler(console)
 logger.addHandler(fhandler)
 ###############################################
