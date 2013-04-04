@@ -66,14 +66,14 @@ def joblist(jobsName):
     assert isinstance(jobsName,list)
     jobs.extend(jobsName)
     
-def chain(jobNameList,dochain=True,doSkip = True,chainUnstalbeJobsOnly = False):
+def chain(jobNameList,dochain=True,doSkip = True,chainAllStatusJobs = True):
     assert isinstance(jobNameList,list)
     if isinstance(dochain,str):
         dochain = eval(dochain)
     if isinstance(doSkip,str):
         doSkip = eval(doSkip)
-    if isinstance(chainUnstalbeJobsOnly,str):
-       chainUnstalbeJobsOnly = eval(chainUnstalbeJobsOnly)
+    if isinstance(chainAllStatusJobs,str):
+       chainAllStatusJobs = eval(chainAllStatusJobs)
     jobNameList.sort()
 #    for jn in jobNameList:
 #        print jn
@@ -102,7 +102,7 @@ def chain(jobNameList,dochain=True,doSkip = True,chainUnstalbeJobsOnly = False):
 #            conrugurumurthytinue
         job = jen[jobName]
         
-        if dochain and chainUnstalbeJobsOnly:
+        if dochain and not chainAllStatusJobs:
             if job.get_color().find("blue")>=0:
                 continue
         job.modify_chain(chain)
@@ -410,7 +410,7 @@ if __name__=='__main__':
     parser.add_option("-a","--action",dest="action",help="the action you want to execute, valid values: [goals: update job's goals; chain: chain or unchain the jobs alphabetically; launch: launch a flow; launchAll: launch all flows")
     parser.add_option("-c","--dochain",dest="dochain",default = True, help="chain or unchain the jobs under a view")
     parser.add_option("-k","--doskip",dest="doskip",default = True, help="put the skipped locale in the last of chain")
-    parser.add_option("-s","--chainUnstalbeJobsOnly",dest="chainUnstalbeJobsOnly",default = False, help="chain the failed jobs only")
+    parser.add_option("-s","--chainAllStatusJobs",dest="chainAllStatusJobs",default = True, help="chain the failed jobs only")
     
     parser.add_option("-y","--docopy",dest="docopy",default = False, help="do copy when copy view")
     parser.add_option("-d","--dest",dest="dstview",help="the destination view for copyview")
@@ -466,7 +466,7 @@ if __name__=='__main__':
         None
     jen = Jenkins(jen_url,options.username,options.password)
     if options.action == "chain":
-        modify_view_jobs(options.url,eval(options.action),options.dochain,options.doskip,options.chainUnstalbeJobsOnly)
+        modify_view_jobs(options.url,eval(options.action),options.dochain,options.doskip,options.chainAllStatusJobs)
 #    elif options.action == "launchall":
 #        modify_view_jobs(options.url,eval(options.action),options.file)
 #    elif options.action == "launch":
