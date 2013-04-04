@@ -58,6 +58,7 @@ def modify_view_jobs(url,fn,*args, **kwargs):
     jobsName = view.get_jobs_list()
     fn(jobsName,*args, **kwargs)
     subviews = view.get_view_dict()
+    subviews = sorted(subviews.iteritems(),key=lambda d:d,reverse = False)
     for vn,vu in subviews.iteritems():
 #        view = fv.get_view(vn)
         modify_view_jobs(vu,fn,*args, **kwargs)
